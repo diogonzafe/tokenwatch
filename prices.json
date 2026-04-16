@@ -1,18 +1,1157 @@
 {
   "updated_at": "2026-04-16",
-  "source": "https://raw.githubusercontent.com/diogonzafe/tokenwatch/main/prices.json",
+  "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
-    "gpt-4o":             { "input": 2.50,  "output": 10.00 },
-    "gpt-4o-mini":        { "input": 0.15,  "output": 0.60  },
-    "gpt-5":              { "input": 1.25,  "output": 10.00 },
-    "gpt-5-mini":         { "input": 0.25,  "output": 2.00  },
-    "gpt-5-nano":         { "input": 0.05,  "output": 0.40  },
-    "claude-opus-4-6":    { "input": 5.00,  "output": 25.00 },
-    "claude-sonnet-4-6":  { "input": 3.00,  "output": 15.00 },
-    "claude-haiku-4-5":   { "input": 1.00,  "output": 5.00  },
-    "gemini-2.5-pro":     { "input": 1.25,  "output": 10.00 },
-    "gemini-2.5-flash":   { "input": 0.30,  "output": 2.50  },
-    "deepseek-chat":      { "input": 0.28,  "output": 0.42  },
-    "deepseek-reasoner":  { "input": 0.55,  "output": 2.19  }
+    "gpt-4o": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-mini": {
+      "input": 0.15,
+      "output": 0.6,
+      "maxInputTokens": 128000
+    },
+    "gpt-5": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5-mini": {
+      "input": 0.25,
+      "output": 2,
+      "maxInputTokens": 272000
+    },
+    "gpt-5-nano": {
+      "input": 0.05,
+      "output": 0.4,
+      "maxInputTokens": 272000
+    },
+    "claude-opus-4-6": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 1000000
+    },
+    "claude-sonnet-4-6": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 1000000
+    },
+    "claude-haiku-4-5": {
+      "input": 1,
+      "output": 5,
+      "maxInputTokens": 200000
+    },
+    "gemini-2.5-pro": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "deepseek-chat": {
+      "input": 0.28,
+      "output": 0.42,
+      "maxInputTokens": 131072
+    },
+    "deepseek-reasoner": {
+      "input": 0.28,
+      "output": 0.42,
+      "maxInputTokens": 131072
+    },
+    "claude-opus-4-5": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-7": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 1000000
+    },
+    "claude-opus-4-1": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-sonnet-4-5": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "gpt-oss-120b": {
+      "input": 3,
+      "output": 4.5,
+      "maxInputTokens": 131072
+    },
+    "gpt-3.5-turbo": {
+      "input": 0.5,
+      "output": 1.5,
+      "maxInputTokens": 16385
+    },
+    "gpt-3.5-turbo-0125": {
+      "input": 0.5,
+      "output": 1.5,
+      "maxInputTokens": 16385
+    },
+    "gpt-35-turbo": {
+      "input": 0.5,
+      "output": 1.5,
+      "maxInputTokens": 4097
+    },
+    "gpt-35-turbo-0125": {
+      "input": 0.5,
+      "output": 1.5,
+      "maxInputTokens": 16384
+    },
+    "gpt-35-turbo-1106": {
+      "input": 1,
+      "output": 2,
+      "maxInputTokens": 16384
+    },
+    "gpt-35-turbo-16k": {
+      "input": 3,
+      "output": 4,
+      "maxInputTokens": 16385
+    },
+    "gpt-35-turbo-16k-0613": {
+      "input": 3,
+      "output": 4,
+      "maxInputTokens": 16385
+    },
+    "gpt-4": {
+      "input": 30,
+      "output": 60,
+      "maxInputTokens": 8192
+    },
+    "gpt-4-0125-preview": {
+      "input": 10,
+      "output": 30,
+      "maxInputTokens": 128000
+    },
+    "gpt-4-0613": {
+      "input": 30,
+      "output": 60,
+      "maxInputTokens": 8192
+    },
+    "gpt-4-1106-preview": {
+      "input": 10,
+      "output": 30,
+      "maxInputTokens": 128000
+    },
+    "gpt-4-32k": {
+      "input": 60,
+      "output": 120,
+      "maxInputTokens": 32768
+    },
+    "gpt-4-32k-0613": {
+      "input": 60,
+      "output": 120,
+      "maxInputTokens": 32768
+    },
+    "gpt-4-turbo": {
+      "input": 10,
+      "output": 30,
+      "maxInputTokens": 128000
+    },
+    "gpt-4-turbo-2024-04-09": {
+      "input": 10,
+      "output": 30,
+      "maxInputTokens": 128000
+    },
+    "gpt-4-turbo-vision-preview": {
+      "input": 10,
+      "output": 30,
+      "maxInputTokens": 128000
+    },
+    "gpt-4.1": {
+      "input": 2,
+      "output": 8,
+      "maxInputTokens": 1047576
+    },
+    "gpt-4.1-2025-04-14": {
+      "input": 2,
+      "output": 8,
+      "maxInputTokens": 1047576
+    },
+    "gpt-4.1-mini": {
+      "input": 0.4,
+      "output": 1.6,
+      "maxInputTokens": 1047576
+    },
+    "gpt-4.1-mini-2025-04-14": {
+      "input": 0.4,
+      "output": 1.6,
+      "maxInputTokens": 1047576
+    },
+    "gpt-4.1-nano": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1047576
+    },
+    "gpt-4.1-nano-2025-04-14": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1047576
+    },
+    "gpt-4.5-preview": {
+      "input": 75,
+      "output": 150,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-2024-05-13": {
+      "input": 5,
+      "output": 15,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-2024-08-06": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-2024-11-20": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-audio-2025-08-28": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-audio-1.5-2026-02-23": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-audio-mini-2025-10-06": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-audio-preview-2024-12-17": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-mini-2024-07-18": {
+      "input": 0.15,
+      "output": 0.6,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-mini-audio-preview-2024-12-17": {
+      "input": 0.15,
+      "output": 0.6,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-mini-realtime-preview-2024-12-17": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "gpt-realtime-2025-08-28": {
+      "input": 4,
+      "output": 16,
+      "maxInputTokens": 32000
+    },
+    "gpt-realtime-1.5-2026-02-23": {
+      "input": 4,
+      "output": 16,
+      "maxInputTokens": 32000
+    },
+    "gpt-realtime-mini-2025-10-06": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-mini-transcribe": {
+      "input": 1.25,
+      "output": 5,
+      "maxInputTokens": 16000
+    },
+    "gpt-4o-realtime-preview-2024-10-01": {
+      "input": 5,
+      "output": 20,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-realtime-preview-2024-12-17": {
+      "input": 5,
+      "output": 20,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-transcribe": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 16000
+    },
+    "gpt-4o-transcribe-diarize": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 16000
+    },
+    "gpt-5.1-2025-11-13": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.1-chat-2025-11-13": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.1-codex-2025-11-13": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.1-codex-mini-2025-11-13": {
+      "input": 0.25,
+      "output": 2,
+      "maxInputTokens": 272000
+    },
+    "gpt-5-2025-08-07": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5-chat": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-5-chat-latest": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-5-codex": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5-mini-2025-08-07": {
+      "input": 0.25,
+      "output": 2,
+      "maxInputTokens": 272000
+    },
+    "gpt-5-nano-2025-08-07": {
+      "input": 0.05,
+      "output": 0.4,
+      "maxInputTokens": 272000
+    },
+    "gpt-5-pro": {
+      "input": 15,
+      "output": 120,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.1": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.1-chat": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.1-codex": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.1-codex-max": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.1-codex-mini": {
+      "input": 0.25,
+      "output": 2,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.2": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.2-2025-12-11": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.2-chat": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.2-chat-2025-12-11": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.2-codex": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.3-chat": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.3-codex": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.2-pro": {
+      "input": 21,
+      "output": 168,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.2-pro-2025-12-11": {
+      "input": 21,
+      "output": 168,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.4": {
+      "input": 2.5,
+      "output": 15,
+      "maxInputTokens": 1050000
+    },
+    "gpt-5.4-2026-03-05": {
+      "input": 2.5,
+      "output": 15,
+      "maxInputTokens": 1050000
+    },
+    "gpt-5.4-pro": {
+      "input": 30,
+      "output": 180,
+      "maxInputTokens": 1050000
+    },
+    "gpt-5.4-pro-2026-03-05": {
+      "input": 30,
+      "output": 180,
+      "maxInputTokens": 1050000
+    },
+    "gpt-5.4-mini": {
+      "input": 0.75,
+      "output": 4.5,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.4-nano": {
+      "input": 0.2,
+      "output": 1.25,
+      "maxInputTokens": 272000
+    },
+    "o1-2024-12-17": {
+      "input": 15,
+      "output": 60,
+      "maxInputTokens": 200000
+    },
+    "o1-mini": {
+      "input": 1.21,
+      "output": 4.84,
+      "maxInputTokens": 128000
+    },
+    "o1-mini-2024-09-12": {
+      "input": 1.1,
+      "output": 4.4,
+      "maxInputTokens": 128000
+    },
+    "o1-preview": {
+      "input": 15,
+      "output": 60,
+      "maxInputTokens": 128000
+    },
+    "o1-preview-2024-09-12": {
+      "input": 15,
+      "output": 60,
+      "maxInputTokens": 128000
+    },
+    "o3-2025-04-16": {
+      "input": 2,
+      "output": 8,
+      "maxInputTokens": 200000
+    },
+    "o3-mini": {
+      "input": 1.1,
+      "output": 4.4,
+      "maxInputTokens": 200000
+    },
+    "o3-mini-2025-01-31": {
+      "input": 1.1,
+      "output": 4.4,
+      "maxInputTokens": 200000
+    },
+    "o3-pro": {
+      "input": 20,
+      "output": 80,
+      "maxInputTokens": 200000
+    },
+    "o3-pro-2025-06-10": {
+      "input": 20,
+      "output": 80,
+      "maxInputTokens": 200000
+    },
+    "o4-mini": {
+      "input": 1.1,
+      "output": 4.4,
+      "maxInputTokens": 200000
+    },
+    "o4-mini-2025-04-16": {
+      "input": 1.1,
+      "output": 4.4,
+      "maxInputTokens": 200000
+    },
+    "deepseek-v3.2": {
+      "input": 0.28,
+      "output": 0.4,
+      "maxInputTokens": 163840
+    },
+    "deepseek-v3.2-speciale": {
+      "input": 0.58,
+      "output": 1.68,
+      "maxInputTokens": 163840
+    },
+    "deepseek-r1": {
+      "input": 0.55,
+      "output": 2.19,
+      "maxInputTokens": 65536
+    },
+    "deepseek-v3": {
+      "input": 0.27,
+      "output": 1.1,
+      "maxInputTokens": 65536
+    },
+    "deepseek-v3-0324": {
+      "input": 0.2,
+      "output": 0.6,
+      "maxInputTokens": 131072
+    },
+    "chatgpt-4o-latest": {
+      "input": 5,
+      "output": 15,
+      "maxInputTokens": 128000
+    },
+    "claude-haiku-4-5-20251001": {
+      "input": 1,
+      "output": 5,
+      "maxInputTokens": 200000
+    },
+    "claude-3-7-sonnet-20250219": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-3-haiku-20240307": {
+      "input": 0.25,
+      "output": 1.25,
+      "maxInputTokens": 200000
+    },
+    "claude-3-opus-20240229": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-4-opus-20250514": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-4-sonnet-20250514": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 1000000
+    },
+    "claude-sonnet-4-5-20250929": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-sonnet-4-5-20250929-v1:0": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-1-20250805": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-20250514": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-5-20251101": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-6-20260205": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 1000000
+    },
+    "claude-opus-4-7-20260416": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 1000000
+    },
+    "claude-sonnet-4-20250514": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 1000000
+    },
+    "codex-mini-latest": {
+      "input": 1.5,
+      "output": 6,
+      "maxInputTokens": 200000
+    },
+    "deepseek-ai/deepseek-r1": {
+      "input": 3,
+      "output": 7,
+      "maxInputTokens": 128000
+    },
+    "deepseek-ai/deepseek-r1-0528": {
+      "input": 135000,
+      "output": 540000,
+      "maxInputTokens": 161000
+    },
+    "deepseek-ai/deepseek-r1-0528-turbo": {
+      "input": 1,
+      "output": 3,
+      "maxInputTokens": 32768
+    },
+    "deepseek-ai/deepseek-r1-distill-llama-70b": {
+      "input": 0.25,
+      "output": 0.75,
+      "maxInputTokens": 128000
+    },
+    "deepseek-ai/deepseek-r1-distill-qwen-32b": {
+      "input": 0.15,
+      "output": 0.15
+    },
+    "deepseek-ai/deepseek-r1-turbo": {
+      "input": 1,
+      "output": 3,
+      "maxInputTokens": 40960
+    },
+    "deepseek-ai/deepseek-v3": {
+      "input": 1.25,
+      "output": 1.25,
+      "maxInputTokens": 65536
+    },
+    "deepseek-ai/deepseek-v3-0324": {
+      "input": 114000,
+      "output": 275000,
+      "maxInputTokens": 161000
+    },
+    "deepseek-ai/deepseek-v3.1": {
+      "input": 55000,
+      "output": 165000,
+      "maxInputTokens": 128000
+    },
+    "deepseek-ai/deepseek-v3.1-terminus": {
+      "input": 0.27,
+      "output": 1,
+      "maxInputTokens": 163840
+    },
+    "deepseek-coder": {
+      "input": 0.14,
+      "output": 0.28,
+      "maxInputTokens": 128000
+    },
+    "gemini-2.0-flash": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.0-flash-001": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.0-flash-lite": {
+      "input": 0.075,
+      "output": 0.3,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.0-flash-lite-001": {
+      "input": 0.075,
+      "output": 0.3,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash-image": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 32768
+    },
+    "gemini-3-pro-image-preview": {
+      "input": 2,
+      "output": 12,
+      "maxInputTokens": 65536
+    },
+    "gemini-3.1-flash-image-preview": {
+      "input": 0.5,
+      "output": 3,
+      "maxInputTokens": 65536
+    },
+    "gemini-3.1-flash-lite-preview": {
+      "input": 0.25,
+      "output": 1.5,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash-lite": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash-lite-preview-09-2025": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash-preview-09-2025": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "gemini-live-2.5-flash-preview-native-audio-09-2025": {
+      "input": 0.3,
+      "output": 2,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash-lite-preview-06-17": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1048576
+    },
+    "gemini-3-pro-preview": {
+      "input": 2,
+      "output": 12,
+      "maxInputTokens": 1048576
+    },
+    "gemini-3.1-pro-preview": {
+      "input": 2,
+      "output": 12,
+      "maxInputTokens": 1048576
+    },
+    "gemini-3.1-pro-preview-customtools": {
+      "input": 2,
+      "output": 12,
+      "maxInputTokens": 1048576
+    },
+    "gemini-3-flash-preview": {
+      "input": 0.5,
+      "output": 3,
+      "maxInputTokens": 1048576
+    },
+    "gemini-robotics-er-1.5-preview": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-computer-use-preview-10-2025": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gemini-flash-latest": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "gemini-flash-lite-latest": {
+      "input": 0.1,
+      "output": 0.4,
+      "maxInputTokens": 1048576
+    },
+    "gemini-gemma-2-27b-it": {
+      "input": 0.35,
+      "output": 1.05,
+      "maxInputTokens": 8192
+    },
+    "gemini-gemma-2-9b-it": {
+      "input": 0.35,
+      "output": 1.05,
+      "maxInputTokens": 8192
+    },
+    "deepseek-ai/deepseek-v3.2": {
+      "input": 0.28,
+      "output": 0.4,
+      "maxInputTokens": 163840
+    },
+    "gpt-3.5-turbo-1106": {
+      "input": 1,
+      "output": 2,
+      "maxInputTokens": 16385
+    },
+    "gpt-3.5-turbo-16k": {
+      "input": 3,
+      "output": 4,
+      "maxInputTokens": 16385
+    },
+    "gpt-4-0314": {
+      "input": 30,
+      "output": 60,
+      "maxInputTokens": 8192
+    },
+    "gpt-4-turbo-preview": {
+      "input": 10,
+      "output": 30,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-audio-preview": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-audio-preview-2025-06-03": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-audio": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-audio-1.5": {
+      "input": 2.5,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-audio-mini": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "gpt-audio-mini-2025-12-15": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-mini-audio-preview": {
+      "input": 0.15,
+      "output": 0.6,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-mini-realtime-preview": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-realtime-preview": {
+      "input": 5,
+      "output": 20,
+      "maxInputTokens": 128000
+    },
+    "gpt-4o-realtime-preview-2025-06-03": {
+      "input": 5,
+      "output": 20,
+      "maxInputTokens": 128000
+    },
+    "gpt-image-1.5": {
+      "input": 5,
+      "output": 10
+    },
+    "gpt-image-1.5-2025-12-16": {
+      "input": 5,
+      "output": 10
+    },
+    "gpt-5.1-chat-latest": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.2-chat-latest": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 128000
+    },
+    "gpt-5.3-chat-latest": {
+      "input": 1.75,
+      "output": 14,
+      "maxInputTokens": 128000
+    },
+    "gpt-5-pro-2025-10-06": {
+      "input": 15,
+      "output": 120,
+      "maxInputTokens": 128000
+    },
+    "gpt-realtime": {
+      "input": 4,
+      "output": 16,
+      "maxInputTokens": 32000
+    },
+    "gpt-realtime-1.5": {
+      "input": 4,
+      "output": 16,
+      "maxInputTokens": 32000
+    },
+    "gpt-realtime-mini": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "deepseek-r1-distill-llama-70b": {
+      "input": 0.99,
+      "output": 0.99,
+      "maxInputTokens": 8000
+    },
+    "deepseek-llama3.3-70b": {
+      "input": 0.2,
+      "output": 0.6,
+      "maxInputTokens": 131072
+    },
+    "deepseek-r1-0528": {
+      "input": 0.2,
+      "output": 0.6,
+      "maxInputTokens": 131072
+    },
+    "deepseek-r1-671b": {
+      "input": 0.8,
+      "output": 0.8,
+      "maxInputTokens": 131072
+    },
+    "deepseek-ai/deepseek-r1-distill-llama-8b": {
+      "input": 0.025,
+      "output": 0.025
+    },
+    "deepseek-ai/deepseek-r1-distill-qwen-1.5b": {
+      "input": 0.09,
+      "output": 0.09
+    },
+    "deepseek-ai/deepseek-r1-distill-qwen-14b": {
+      "input": 0.07,
+      "output": 0.07
+    },
+    "deepseek-ai/deepseek-r1-distill-qwen-7b": {
+      "input": 0.2,
+      "output": 0.2
+    },
+    "o1": {
+      "input": 15,
+      "output": 60,
+      "maxInputTokens": 200000
+    },
+    "o1-pro": {
+      "input": 150,
+      "output": 600,
+      "maxInputTokens": 200000
+    },
+    "o1-pro-2025-03-19": {
+      "input": 150,
+      "output": 600,
+      "maxInputTokens": 200000
+    },
+    "o3": {
+      "input": 2,
+      "output": 8,
+      "maxInputTokens": 200000
+    },
+    "gpt-oss-20b": {
+      "input": 0.09,
+      "output": 0.36
+    },
+    "deepseek-ai/deepseek-r1-0528-tput": {
+      "input": 0.55,
+      "output": 2.19,
+      "maxInputTokens": 128000
+    },
+    "claude-3-5-haiku": {
+      "input": 1,
+      "output": 5,
+      "maxInputTokens": 200000
+    },
+    "claude-3-5-haiku@20241022": {
+      "input": 1,
+      "output": 5,
+      "maxInputTokens": 200000
+    },
+    "claude-haiku-4-5@20251001": {
+      "input": 1,
+      "output": 5,
+      "maxInputTokens": 200000
+    },
+    "claude-3-5-sonnet": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-3-5-sonnet@20240620": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-3-7-sonnet@20250219": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-3-haiku": {
+      "input": 0.25,
+      "output": 1.25,
+      "maxInputTokens": 200000
+    },
+    "claude-3-haiku@20240307": {
+      "input": 0.25,
+      "output": 1.25,
+      "maxInputTokens": 200000
+    },
+    "claude-3-opus": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-3-opus@20240229": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-3-sonnet": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-3-sonnet@20240229": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-1@20250805": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-5@20251101": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4-6@default": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 1000000
+    },
+    "claude-opus-4-7@default": {
+      "input": 5,
+      "output": 25,
+      "maxInputTokens": 1000000
+    },
+    "claude-sonnet-4-5@20250929": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4@20250514": {
+      "input": 15,
+      "output": 75,
+      "maxInputTokens": 200000
+    },
+    "claude-sonnet-4": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 1000000
+    },
+    "claude-sonnet-4@20250514": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 1000000
+    },
+    "deepseek-ai/deepseek-v3.1-maas": {
+      "input": 1.35,
+      "output": 5.4,
+      "maxInputTokens": 163840
+    },
+    "deepseek-ai/deepseek-v3.2-maas": {
+      "input": 0.56,
+      "output": 1.68,
+      "maxInputTokens": 163840
+    },
+    "deepseek-ai/deepseek-r1-0528-maas": {
+      "input": 1.35,
+      "output": 5.4,
+      "maxInputTokens": 65336
+    },
+    "deepseek-ai/deepseek-ocr-maas": {
+      "input": 0.3,
+      "output": 1.2
+    },
+    "deepseek-r1-8b": {
+      "input": 0.1,
+      "output": 0.2,
+      "maxInputTokens": 65536
+    },
+    "deepseek-r1-7b-qwen": {
+      "input": 0.08,
+      "output": 0.15,
+      "maxInputTokens": 131072
+    },
+    "deepseek-coder-6.7b": {
+      "input": 0.06,
+      "output": 0.12,
+      "maxInputTokens": 16384
+    },
+    "gpt-4o-mini-transcribe-2025-03-20": {
+      "input": 1.25,
+      "output": 5,
+      "maxInputTokens": 16000
+    },
+    "gpt-4o-mini-transcribe-2025-12-15": {
+      "input": 1.25,
+      "output": 5,
+      "maxInputTokens": 16000
+    },
+    "gpt-realtime-mini-2025-12-15": {
+      "input": 0.6,
+      "output": 2.4,
+      "maxInputTokens": 128000
+    },
+    "gemini-2.5-flash-native-audio-latest": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash-native-audio-preview-09-2025": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "gemini-2.5-flash-native-audio-preview-12-2025": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "gemini-3.1-flash-live-preview": {
+      "input": 0.75,
+      "output": 4.5,
+      "maxInputTokens": 131072
+    },
+    "gemini-pro-latest": {
+      "input": 1.25,
+      "output": 10,
+      "maxInputTokens": 1048576
+    },
+    "gemini-exp-1206": {
+      "input": 0.3,
+      "output": 2.5,
+      "maxInputTokens": 1048576
+    },
+    "claude-sonnet-4-6@default": {
+      "input": 3,
+      "output": 15,
+      "maxInputTokens": 1000000
+    }
   }
 }
