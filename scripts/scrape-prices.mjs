@@ -1,168 +1,133 @@
 #!/usr/bin/env node
 /**
- * Scrapes LLM pricing pages and outputs a prices.json to stdout.
+ * Fetches LLM pricing data from the LiteLLM community JSON and outputs a prices.json.
  * Run by the sync-prices GitHub Action.
  *
- * Requires: @playwright/test installed in the environment.
+ * No external dependencies — uses only Node.js built-ins + global fetch (Node 18+).
  */
-import { chromium } from 'playwright'
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUT_PATH = join(__dirname, '..', 'prices.json')
 
-/** Parse "$X.XX" or "X.XX" → float, scaling from per-token to per-million if needed */
-function parsePricePer1M(text) {
-  const num = parseFloat(text.replace(/[^0-9.]/g, ''))
-  return isNaN(num) ? null : num
+const LITELLM_URL =
+  'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json'
+
+const NON_CHAT_TOKENS = [
+  'embed',
+  'search',
+  'instruct',
+  'tts',
+  'whisper',
+  'dall-e',
+  'rerank',
+  'moderation',
+]
+
+function isNonChatModel(name) {
+  return NON_CHAT_TOKENS.some((tok) => name.includes(tok)) || name.startsWith('ft:')
 }
 
-async function scrapeOpenAI(page) {
-  await page.goto('https://openai.com/api/pricing', { waitUntil: 'domcontentloaded', timeout: 30000 })
-  await page.waitForTimeout(2000)
+function detectProvider(rawKey, entry) {
+  const provider = entry.litellm_provider ?? ''
+  const modelName = rawKey.includes('/') ? rawKey.split('/').slice(1).join('/') : rawKey
 
-  const models = {}
-  // OpenAI pricing table rows: model name | input price | output price
-  const rows = await page.$$eval('table tbody tr, [class*="pricing"] tr', (trs) =>
-    trs.map((tr) => {
-      const cells = [...tr.querySelectorAll('td, th')].map((td) => td.textContent?.trim() ?? '')
-      return cells
-    }),
+  if (provider === 'openai' || provider === 'openai_text_completion') return 'openai'
+  if (provider === 'anthropic') return 'anthropic'
+  if ((provider === 'gemini' || provider.startsWith('vertex_ai')) && modelName.startsWith('gemini-'))
+    return 'gemini'
+  if (provider === 'deepseek' || modelName.startsWith('deepseek-')) return 'deepseek'
+
+  // name-prefix fallback
+  if (
+    modelName.startsWith('gpt-') ||
+    modelName.startsWith('o1-') ||
+    modelName.startsWith('o3-') ||
+    modelName.startsWith('o4-')
   )
+    return 'openai'
+  if (modelName.startsWith('claude-')) return 'anthropic'
+  if (modelName.startsWith('gemini-')) return 'gemini'
 
-  const knownModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano']
-  for (const row of rows) {
-    const name = row[0]?.toLowerCase().replace(/\s+/g, '-') ?? ''
-    const match = knownModels.find((m) => name.includes(m))
-    if (match && row.length >= 3) {
-      const input = parsePricePer1M(row[1] ?? '')
-      const output = parsePricePer1M(row[2] ?? '')
-      if (input !== null && output !== null) {
-        models[match] = { input, output }
-      }
-    }
-  }
-  return models
+  return null
 }
 
-async function scrapeAnthropic(page) {
-  await page.goto('https://www.anthropic.com/pricing', { waitUntil: 'domcontentloaded', timeout: 30000 })
-  await page.waitForTimeout(2000)
-
-  const models = {}
-  const knownModels = {
-    'claude-opus-4': 'claude-opus-4-6',
-    'claude-sonnet-4': 'claude-sonnet-4-6',
-    'claude-haiku-4': 'claude-haiku-4-5',
-  }
-
-  const rows = await page.$$eval('table tbody tr', (trs) =>
-    trs.map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent?.trim() ?? '')),
-  )
-
-  for (const row of rows) {
-    const name = row[0]?.toLowerCase() ?? ''
-    for (const [key, modelId] of Object.entries(knownModels)) {
-      if (name.includes(key) && row.length >= 3) {
-        const input = parsePricePer1M(row[1] ?? '')
-        const output = parsePricePer1M(row[2] ?? '')
-        if (input !== null && output !== null) {
-          models[modelId] = { input, output }
-        }
-      }
-    }
-  }
-  return models
-}
-
-async function scrapeGemini(page) {
-  await page.goto('https://ai.google.dev/pricing', { waitUntil: 'domcontentloaded', timeout: 30000 })
-  await page.waitForTimeout(2000)
-
-  const models = {}
-  const knownModels = {
-    'gemini-2.5-pro': 'gemini-2.5-pro',
-    'gemini-2.5-flash': 'gemini-2.5-flash',
-  }
-
-  const rows = await page.$$eval('table tbody tr', (trs) =>
-    trs.map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent?.trim() ?? '')),
-  )
-
-  for (const row of rows) {
-    const name = row[0]?.toLowerCase() ?? ''
-    for (const [key, modelId] of Object.entries(knownModels)) {
-      if (name.includes(key) && row.length >= 3) {
-        const input = parsePricePer1M(row[1] ?? '')
-        const output = parsePricePer1M(row[2] ?? '')
-        if (input !== null && output !== null) {
-          models[modelId] = { input, output }
-        }
-      }
-    }
-  }
-  return models
+function round5(n) {
+  return Math.round(n * 100000) / 100000
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: true })
-  const page = await browser.newPage()
-
-  const results = { openai: {}, anthropic: {}, gemini: {} }
-  const errors = []
-
+  // Step 1: read existing prices.json as baseline
+  let existingModels = {}
   try {
-    results.openai = await scrapeOpenAI(page)
-    console.error(`✓ OpenAI: ${Object.keys(results.openai).length} models`)
-  } catch (e) {
-    errors.push(`OpenAI: ${e.message}`)
-    console.error(`✗ OpenAI scrape failed: ${e.message}`)
+    const raw = readFileSync(OUT_PATH, 'utf8')
+    existingModels = JSON.parse(raw).models ?? {}
+  } catch {
+    // file missing or malformed — start fresh
   }
 
+  // Step 2: fetch LiteLLM JSON
+  let litellmData
   try {
-    results.anthropic = await scrapeAnthropic(page)
-    console.error(`✓ Anthropic: ${Object.keys(results.anthropic).length} models`)
+    const res = await fetch(LITELLM_URL, { signal: AbortSignal.timeout(15_000) })
+    if (!res.ok) {
+      console.error(`✗ LiteLLM fetch failed: HTTP ${res.status}`)
+      process.exit(0)
+    }
+    litellmData = await res.json()
   } catch (e) {
-    errors.push(`Anthropic: ${e.message}`)
-    console.error(`✗ Anthropic scrape failed: ${e.message}`)
+    console.error(`✗ LiteLLM fetch error: ${e.message}`)
+    process.exit(0)
   }
 
-  try {
-    results.gemini = await scrapeGemini(page)
-    console.error(`✓ Gemini: ${Object.keys(results.gemini).length} models`)
-  } catch (e) {
-    errors.push(`Gemini: ${e.message}`)
-    console.error(`✗ Gemini scrape failed: ${e.message}`)
+  // Step 3: iterate and filter
+  const counts = { openai: 0, anthropic: 0, gemini: 0, deepseek: 0 }
+  const merged = { ...existingModels }
+
+  for (const [rawKey, entry] of Object.entries(litellmData)) {
+    if (rawKey === '__default') continue
+
+    const modelName = (
+      rawKey.includes('/') ? rawKey.split('/').slice(1).join('/') : rawKey
+    ).toLowerCase().trim()
+
+    if (isNonChatModel(modelName)) continue
+
+    const inputPerToken = entry.input_cost_per_token
+    const outputPerToken = entry.output_cost_per_token
+    if (!inputPerToken || !outputPerToken) continue
+
+    const provider = detectProvider(rawKey, entry)
+    if (!provider) continue
+
+    const modelEntry = {
+      input: round5(inputPerToken * 1_000_000),
+      output: round5(outputPerToken * 1_000_000),
+    }
+
+    const maxInputTokens = entry.max_input_tokens ?? entry.max_tokens ?? null
+    if (maxInputTokens) modelEntry.maxInputTokens = maxInputTokens
+
+    merged[modelName] = modelEntry
+    counts[provider]++
   }
 
-  await browser.close()
-
-  // Read existing prices.json as base (preserves models not scraped, e.g. DeepSeek)
-  const existing = JSON.parse(
-    (await import('node:fs')).readFileSync(OUT_PATH, 'utf8'),
-  )
-
-  const merged = {
-    ...existing.models,
-    ...results.openai,
-    ...results.anthropic,
-    ...results.gemini,
-  }
-
+  // Step 4: write output
   const output = {
     updated_at: new Date().toISOString().slice(0, 10),
-    source: 'https://raw.githubusercontent.com/diogonzafe/tokenwatch/main/prices.json',
+    source: LITELLM_URL,
     models: merged,
   }
 
   writeFileSync(OUT_PATH, JSON.stringify(output, null, 2) + '\n')
-  console.error(`\nWrote ${OUT_PATH} with ${Object.keys(merged).length} models`)
 
-  if (errors.length > 0) {
-    console.error(`\nWarnings (partial scrape):\n${errors.join('\n')}`)
-  }
+  console.error(`✓ OpenAI: ${counts.openai} models`)
+  console.error(`✓ Anthropic: ${counts.anthropic} models`)
+  console.error(`✓ Gemini: ${counts.gemini} models`)
+  console.error(`✓ DeepSeek: ${counts.deepseek} models`)
+  console.error(`\nWrote ${OUT_PATH} with ${Object.keys(merged).length} models`)
 }
 
 main().catch((err) => {

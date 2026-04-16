@@ -29,12 +29,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright + Chromium
-        run: |
-          npm install -D playwright
-          npx playwright install chromium --with-deps
-
-      - name: Scrape prices
+      - name: Sync prices
         run: node scripts/scrape-prices.mjs
 
       - name: Check for diff

@@ -5,6 +5,8 @@ export interface ModelPrice {
   input: number
   /** USD per 1 million output tokens */
   output: number
+  /** Maximum context window (input tokens) for this model */
+  maxInputTokens?: number
 }
 
 export type PriceMap = Record<string, ModelPrice>

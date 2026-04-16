@@ -1,4 +1,4 @@
-# tokenwatch
+# @diogonzafe/tokenwatch
 
 Transparent TypeScript wrapper that intercepts LLM API calls and tracks cost in real-time by session, user and model — without changing anything in your existing code.
 
@@ -7,7 +7,7 @@ Supports **OpenAI**, **Anthropic**, **Google Gemini** and **DeepSeek**.
 ## Installation
 
 ```bash
-npm install tokenwatch
+npm install @diogonzafe/tokenwatch
 ```
 
 Peer dependencies (install only what you use):
@@ -24,7 +24,7 @@ npm install better-sqlite3          # optional — only for storage: 'sqlite'
 ## Setup
 
 ```ts
-import { createTracker } from 'tokenwatch'
+import { createTracker } from '@diogonzafe/tokenwatch'
 
 const tracker = await createTracker({
   // All fields are optional
@@ -33,7 +33,7 @@ const tracker = await createTracker({
   webhookUrl: 'https://...',   // Discord / Slack webhook
   syncPrices: true,            // fetch fresh prices from GitHub (default: true)
   customPrices: {
-    'my-model': { input: 0.001, output: 0.002 }  // USD per 1M tokens
+    'my-model': { input: 0.50, output: 1.50 }  // USD per 1M tokens
   }
 })
 ```
@@ -44,7 +44,7 @@ const tracker = await createTracker({
 
 ```ts
 import OpenAI from 'openai'
-import { wrapOpenAI } from 'tokenwatch'
+import { wrapOpenAI } from '@diogonzafe/tokenwatch'
 
 const openai = wrapOpenAI(new OpenAI(), tracker)
 
@@ -80,7 +80,7 @@ for await (const chunk of stream) {
 
 ```ts
 import Anthropic from '@anthropic-ai/sdk'
-import { wrapAnthropic } from 'tokenwatch'
+import { wrapAnthropic } from '@diogonzafe/tokenwatch'
 
 const anthropic = wrapAnthropic(new Anthropic(), tracker)
 
@@ -99,7 +99,7 @@ const res = await anthropic.messages.create({
 
 ```ts
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { wrapGemini } from 'tokenwatch'
+import { wrapGemini } from '@diogonzafe/tokenwatch'
 
 const genAI = wrapGemini(new GoogleGenerativeAI(process.env.GEMINI_API_KEY!), tracker)
 
@@ -115,7 +115,7 @@ DeepSeek uses an OpenAI-compatible API — just set `baseURL`:
 
 ```ts
 import OpenAI from 'openai'
-import { wrapDeepSeek } from 'tokenwatch'
+import { wrapDeepSeek } from '@diogonzafe/tokenwatch'
 
 const deepseek = wrapDeepSeek(
   new OpenAI({
@@ -171,6 +171,23 @@ Prices are in **USD per 1 million tokens**.
 
 ---
 
+## Pricing Data
+
+`prices.json` bundles 200+ models across all providers. Each entry includes prices and context window size:
+
+```json
+{
+  "gpt-4o":            { "input": 2.50,  "output": 10.00, "maxInputTokens": 128000 },
+  "claude-sonnet-4-6": { "input": 3.00,  "output": 15.00, "maxInputTokens": 1000000 },
+  "gemini-2.5-pro":    { "input": 1.25,  "output": 10.00, "maxInputTokens": 1048576 },
+  "deepseek-chat":     { "input": 0.28,  "output": 0.42,  "maxInputTokens": 131072 }
+}
+```
+
+Prices are updated every Monday via a GitHub Action that pulls from the [LiteLLM community model registry](https://github.com/BerriAI/litellm). New models are auto-discovered — no manual updates needed.
+
+---
+
 ## SQLite Storage
 
 For persistent tracking across restarts:
@@ -211,27 +228,6 @@ npx tokenwatch prices   # list all models and current prices
 npx tokenwatch report   # show last saved report (SQLite)
 npx tokenwatch help     # show help
 ```
-
----
-
-## Bundled Models
-
-| Model | Input ($/1M) | Output ($/1M) |
-|---|---|---|
-| gpt-4o | $2.50 | $10.00 |
-| gpt-4o-mini | $0.15 | $0.60 |
-| gpt-5 | $1.25 | $10.00 |
-| gpt-5-mini | $0.25 | $2.00 |
-| gpt-5-nano | $0.05 | $0.40 |
-| claude-opus-4-6 | $5.00 | $25.00 |
-| claude-sonnet-4-6 | $3.00 | $15.00 |
-| claude-haiku-4-5 | $1.00 | $5.00 |
-| gemini-2.5-pro | $1.25 | $10.00 |
-| gemini-2.5-flash | $0.30 | $2.50 |
-| deepseek-chat | $0.28 | $0.42 |
-| deepseek-reasoner | $0.55 | $2.19 |
-
-Prices are automatically updated every Monday via GitHub Action.
 
 ---
 
