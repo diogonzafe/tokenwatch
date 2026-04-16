@@ -149,6 +149,10 @@ tracker.getReport()
 //   period: { from: '2026-04-16T10:00:00Z', to: '2026-04-16T11:00:00Z' }
 // }
 
+tracker.getModelInfo('gpt-4o')
+// { input: 2.5, output: 10, maxInputTokens: 128000 }
+// Returns null if the model is unknown
+
 tracker.reset()                     // clear all data
 tracker.resetSession('session_abc') // clear one session
 tracker.exportJSON()                // full report as JSON string

@@ -22,6 +22,7 @@ Config fields (all optional):
 ### Tracker methods
 - track(entry)                   — called by providers, not by user
 - getReport() → Report
+- getModelInfo(model: string) → ModelPrice | null  — prices + maxInputTokens, null if unknown
 - reset()
 - resetSession(sessionId: string)
 - exportJSON() → string
