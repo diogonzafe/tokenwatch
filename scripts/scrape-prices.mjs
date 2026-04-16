@@ -153,7 +153,7 @@ async function main() {
 
   const output = {
     updated_at: new Date().toISOString().slice(0, 10),
-    source: 'https://raw.githubusercontent.com/diogonzafe/llm-cost-tracker/main/prices.json',
+    source: 'https://raw.githubusercontent.com/diogonzafe/tokenwatch/main/prices.json',
     models: merged,
   }
 

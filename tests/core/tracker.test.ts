@@ -142,19 +142,19 @@ describe('createTracker — zod config validation', () => {
   it('throws on invalid storage value', () => {
     expect(() =>
       createTracker({ syncPrices: false, storage: 'redis' as 'memory' }),
-    ).toThrow('[llm-cost-tracker] Invalid config')
+    ).toThrow('[tokenwatch] Invalid config')
   })
 
   it('throws on negative alertThreshold', () => {
     expect(() =>
       createTracker({ syncPrices: false, alertThreshold: -1 }),
-    ).toThrow('[llm-cost-tracker] Invalid config')
+    ).toThrow('[tokenwatch] Invalid config')
   })
 
   it('throws on malformed webhookUrl', () => {
     expect(() =>
       createTracker({ syncPrices: false, webhookUrl: 'not-a-url' }),
-    ).toThrow('[llm-cost-tracker] Invalid config')
+    ).toThrow('[tokenwatch] Invalid config')
   })
 
   it('throws on invalid customPrices (negative price)', () => {
@@ -163,7 +163,7 @@ describe('createTracker — zod config validation', () => {
         syncPrices: false,
         customPrices: { 'my-model': { input: -1, output: 0 } },
       }),
-    ).toThrow('[llm-cost-tracker] Invalid config')
+    ).toThrow('[tokenwatch] Invalid config')
   })
 
   it('accepts valid config without throwing', () => {

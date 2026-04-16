@@ -1,4 +1,4 @@
-# llm-cost-tracker
+# tokenwatch
 
 Transparent TypeScript wrapper that intercepts LLM API calls and tracks cost in real-time by session, user and model — without changing anything in your existing code.
 
@@ -7,7 +7,7 @@ Supports **OpenAI**, **Anthropic**, **Google Gemini** and **DeepSeek**.
 ## Installation
 
 ```bash
-npm install llm-cost-tracker
+npm install tokenwatch
 ```
 
 Peer dependencies (install only what you use):
@@ -24,7 +24,7 @@ npm install better-sqlite3          # optional — only for storage: 'sqlite'
 ## Setup
 
 ```ts
-import { createTracker } from 'llm-cost-tracker'
+import { createTracker } from 'tokenwatch'
 
 const tracker = await createTracker({
   // All fields are optional
@@ -44,7 +44,7 @@ const tracker = await createTracker({
 
 ```ts
 import OpenAI from 'openai'
-import { wrapOpenAI } from 'llm-cost-tracker'
+import { wrapOpenAI } from 'tokenwatch'
 
 const openai = wrapOpenAI(new OpenAI(), tracker)
 
@@ -80,7 +80,7 @@ for await (const chunk of stream) {
 
 ```ts
 import Anthropic from '@anthropic-ai/sdk'
-import { wrapAnthropic } from 'llm-cost-tracker'
+import { wrapAnthropic } from 'tokenwatch'
 
 const anthropic = wrapAnthropic(new Anthropic(), tracker)
 
@@ -99,7 +99,7 @@ const res = await anthropic.messages.create({
 
 ```ts
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { wrapGemini } from 'llm-cost-tracker'
+import { wrapGemini } from 'tokenwatch'
 
 const genAI = wrapGemini(new GoogleGenerativeAI(process.env.GEMINI_API_KEY!), tracker)
 
@@ -115,7 +115,7 @@ DeepSeek uses an OpenAI-compatible API — just set `baseURL`:
 
 ```ts
 import OpenAI from 'openai'
-import { wrapDeepSeek } from 'llm-cost-tracker'
+import { wrapDeepSeek } from 'tokenwatch'
 
 const deepseek = wrapDeepSeek(
   new OpenAI({
@@ -162,7 +162,7 @@ tracker.exportCSV()                 // all calls as CSV string
 Prices are resolved in this priority order:
 
 1. **`customPrices`** — your own overrides, highest priority
-2. **Remote `prices.json`** — fetched from GitHub, cached for 24h in `~/.llm-cost-tracker/prices.json`
+2. **Remote `prices.json`** — fetched from GitHub, cached for 24h in `~/.tokenwatch/prices.json`
 3. **Bundled `prices.json`** — always-present fallback, updated weekly via GitHub Action
 
 If a model is not found in any layer, cost is recorded as **$0** with a `console.warn`.
@@ -181,7 +181,7 @@ npm install better-sqlite3
 
 ```ts
 const tracker = await createTracker({ storage: 'sqlite' })
-// Data stored in ~/.llm-cost-tracker/usage.db
+// Data stored in ~/.tokenwatch/usage.db
 ```
 
 ---
@@ -198,7 +198,7 @@ const tracker = await createTracker({
 
 Webhook payload:
 ```json
-{ "text": "[llm-cost-tracker] Alert: total cost reached $5.0012 USD (threshold: $5)" }
+{ "text": "[tokenwatch] Alert: total cost reached $5.0012 USD (threshold: $5)" }
 ```
 
 ---
@@ -206,10 +206,10 @@ Webhook payload:
 ## CLI
 
 ```bash
-npx llm-cost-tracker sync     # force update cached prices from remote
-npx llm-cost-tracker prices   # list all models and current prices
-npx llm-cost-tracker report   # show last saved report (SQLite)
-npx llm-cost-tracker help     # show help
+npx tokenwatch sync     # force update cached prices from remote
+npx tokenwatch prices   # list all models and current prices
+npx tokenwatch report   # show last saved report (SQLite)
+npx tokenwatch help     # show help
 ```
 
 ---

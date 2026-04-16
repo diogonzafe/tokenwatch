@@ -26,8 +26,8 @@ export function resolvePrice(
   if (found) return found
 
   console.warn(
-    `[llm-cost-tracker] Unknown model "${model}". Cost will be recorded as $0. ` +
-      `Add it via customPrices or update prices with: llm-cost-tracker sync`,
+    `[tokenwatch] Unknown model "${model}". Cost will be recorded as $0. ` +
+      `Add it via customPrices or update prices with: tokenwatch sync`,
   )
   return { input: 0, output: 0 }
 }

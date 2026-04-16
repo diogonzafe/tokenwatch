@@ -50,7 +50,7 @@ function cmdPrices(): void {
 
 function cmdHelp(): void {
   console.log(`
-llm-cost-tracker — CLI
+tokenwatch — CLI
 
 Commands:
   sync      Fetch and cache latest model prices from remote
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
       cmdHelp()
       break
     default:
-      console.error(`Unknown command: ${cmd}\nRun "llm-cost-tracker help" for usage.`)
+      console.error(`Unknown command: ${cmd}\nRun "tokenwatch help" for usage.`)
       process.exit(1)
   }
 }

@@ -1,6 +1,6 @@
 {
   "updated_at": "2026-04-16",
-  "source": "https://raw.githubusercontent.com/diogonzafe/llm-cost-tracker/main/prices.json",
+  "source": "https://raw.githubusercontent.com/diogonzafe/tokenwatch/main/prices.json",
   "models": {
     "gpt-4o":             { "input": 2.50,  "output": 10.00 },
     "gpt-4o-mini":        { "input": 0.15,  "output": 0.60  },

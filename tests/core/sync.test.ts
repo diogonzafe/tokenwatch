@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 // We test with a temp directory to avoid touching the real cache
-const TEST_DIR = join(tmpdir(), 'llm-cost-tracker-test-sync')
+const TEST_DIR = join(tmpdir(), 'tokenwatch-test-sync')
 const TEST_CACHE = join(TEST_DIR, 'prices.json')
 
 const MOCK_PRICES = {

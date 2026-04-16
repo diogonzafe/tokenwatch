@@ -35,7 +35,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
   const parsed = TrackerConfigSchema.safeParse(config)
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n')
-    throw new Error(`[llm-cost-tracker] Invalid config:\n${issues}`)
+    throw new Error(`[tokenwatch] Invalid config:\n${issues}`)
   }
 
   const {
@@ -90,7 +90,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     if (total >= alertThreshold) {
       alertFired = true
       const payload = {
-        text: `[llm-cost-tracker] Alert: total cost reached $${total.toFixed(4)} USD (threshold: $${alertThreshold})`,
+        text: `[tokenwatch] Alert: total cost reached $${total.toFixed(4)} USD (threshold: $${alertThreshold})`,
       }
       fetch(webhookUrl, {
         method: 'POST',

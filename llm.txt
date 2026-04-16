@@ -1,10 +1,10 @@
-# llm-cost-tracker
+# tokenwatch
 
 ## What this library does
 Transparent TypeScript wrapper that intercepts LLM API calls (OpenAI, Anthropic, Google Gemini, DeepSeek) and tracks token usage and cost in real-time by session, user and model. Zero latency added. No changes required to existing code.
 
 ## Package
-- npm: llm-cost-tracker
+- npm: tokenwatch
 - Node 20+, TypeScript 5.x, ESM + CJS dual build
 - One runtime dependency: zod (config validation)
 - Peer deps (all optional): openai, @anthropic-ai/sdk, @google/generative-ai, better-sqlite3
@@ -52,7 +52,7 @@ All wrappers:
 
 ## Price resolution order
 1. customPrices (user override)
-2. Remote prices.json from GitHub (cached 24h at ~/.llm-cost-tracker/prices.json)
+2. Remote prices.json from GitHub (cached 24h at ~/.tokenwatch/prices.json)
 3. Bundled prices.json (always present as fallback)
 Unknown model → cost = $0 + console.warn
 
@@ -87,18 +87,18 @@ scripts/scrape-prices.mjs — Playwright scraper run by GitHub Action
 .github/workflows/sync-prices.yml — weekly price sync + npm publish
 
 ## CLI
-llm-cost-tracker sync     — fetch and cache remote prices
-llm-cost-tracker prices   — list bundled models and prices
-llm-cost-tracker report   — show last saved report (SQLite)
-llm-cost-tracker help     — help
+tokenwatch sync     — fetch and cache remote prices
+tokenwatch prices   — list bundled models and prices
+tokenwatch report   — show last saved report (SQLite)
+tokenwatch help     — help
 
 ## Config validation
 zod schema validates TrackerConfig at createTracker() call time.
-Throws "[llm-cost-tracker] Invalid config:\n  <field>: <message>" on invalid input.
+Throws "[tokenwatch] Invalid config:\n  <field>: <message>" on invalid input.
 
 ## SQLite
 Optional. Requires better-sqlite3.
-DB path: ~/.llm-cost-tracker/usage.db
+DB path: ~/.tokenwatch/usage.db
 Falls back gracefully with clear error if better-sqlite3 not installed.
 
 ## Streaming

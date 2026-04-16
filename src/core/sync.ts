@@ -4,11 +4,11 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { PricesFile, PriceMap } from '../types/index.js'
 
-const CACHE_DIR = join(homedir(), '.llm-cost-tracker')
+const CACHE_DIR = join(homedir(), '.tokenwatch')
 const CACHE_FILE = join(CACHE_DIR, 'prices.json')
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const REMOTE_URL =
-  'https://raw.githubusercontent.com/diogonzafe/llm-cost-tracker/main/prices.json'
+  'https://raw.githubusercontent.com/diogonzafe/tokenwatch/main/prices.json'
 
 export async function fetchRemotePrices(url = REMOTE_URL): Promise<PriceMap | null> {
   try {

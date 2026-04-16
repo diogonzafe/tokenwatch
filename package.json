@@ -1,5 +1,5 @@
 {
-  "name": "llm-cost-tracker",
+  "name": "tokenwatch",
   "version": "0.1.0",
   "description": "Transparent wrapper to track LLM API costs in real-time by session, user and model",
   "author": "diogonzafe",
@@ -16,7 +16,7 @@
     }
   },
   "bin": {
-    "llm-cost-tracker": "./dist/cli.js"
+    "tokenwatch": "./dist/cli.js"
   },
   "files": [
     "dist",

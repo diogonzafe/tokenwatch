@@ -28,7 +28,7 @@ export class MemoryStorage implements IStorage {
 
 // ─── SQLite storage ───────────────────────────────────────────────────────────
 
-const DB_DIR = join(homedir(), '.llm-cost-tracker')
+const DB_DIR = join(homedir(), '.tokenwatch')
 const DB_PATH = join(DB_DIR, 'usage.db')
 
 export class SqliteStorage implements IStorage {
@@ -50,7 +50,7 @@ export class SqliteStorage implements IStorage {
       BetterSqlite3 = req('better-sqlite3')
     } catch {
       throw new Error(
-        '[llm-cost-tracker] SQLite storage requires better-sqlite3. ' +
+        '[tokenwatch] SQLite storage requires better-sqlite3. ' +
           'Run: npm install better-sqlite3',
       )
     }
