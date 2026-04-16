@@ -131,12 +131,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
         const { cleaned, sessionId, userId } = extractMeta(params)
         const model = typeof cleaned['model'] === 'string' ? cleaned['model'] : 'unknown'
 
-        let result: unknown
-        try {
-          result = await (target as CompletionsLike).create(cleaned)
-        } catch (err) {
-          throw err
-        }
+        const result = await (target as CompletionsLike).create(cleaned)
 
         if (result && typeof result === 'object' && Symbol.asyncIterator in result) {
           return wrapStream(

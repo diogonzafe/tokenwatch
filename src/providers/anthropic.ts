@@ -127,12 +127,7 @@ export function wrapAnthropic<T extends AnthropicLike>(
         const { cleaned, sessionId, userId } = extractMeta(params)
         const model = typeof cleaned['model'] === 'string' ? cleaned['model'] : 'unknown'
 
-        let result: unknown
-        try {
-          result = await (target as MessagesLike).create(cleaned)
-        } catch (err) {
-          throw err
-        }
+        const result = await (target as MessagesLike).create(cleaned)
 
         if (result && typeof result === 'object' && Symbol.asyncIterator in result) {
           return wrapStream(

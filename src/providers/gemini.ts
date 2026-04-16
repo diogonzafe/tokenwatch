@@ -49,13 +49,7 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
           get(mTarget, mProp) {
             if (mProp === 'generateContent') {
               return async function (params: unknown) {
-                let result: { response: GenerateContentResponse }
-                try {
-                  result = await mTarget.generateContent(params)
-                } catch (err) {
-                  throw err
-                }
-
+                const result = await mTarget.generateContent(params)
                 const meta = result.response.usageMetadata
                 tracker.track({
                   model: modelId,
@@ -69,15 +63,7 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
 
             if (mProp === 'generateContentStream') {
               return async function (params: unknown) {
-                let streamResult: {
-                  stream: AsyncIterable<{ usageMetadata?: UsageMetadata | null }>
-                  response: Promise<GenerateContentResponse>
-                }
-                try {
-                  streamResult = await mTarget.generateContentStream(params)
-                } catch (err) {
-                  throw err
-                }
+                const streamResult = await mTarget.generateContentStream(params)
 
                 // Consume usage from the resolved response promise after streaming
                 streamResult.response

@@ -130,7 +130,7 @@ describe('wrapOpenAI', () => {
     const noUsageClient = {
       chat: {
         completions: {
-          create: vi.fn(async () => {
+          create: vi.fn(async (_params: Record<string, unknown>) => {
             async function* gen() {
               yield { model: 'gpt-4o', usage: null }
               yield { model: 'gpt-4o', usage: null }
