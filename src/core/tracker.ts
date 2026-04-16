@@ -7,6 +7,7 @@ import type {
   ModelStats,
   SessionStats,
   UserStats,
+  ModelPrice,
   PriceMap,
 } from '../types/index.js'
 import { resolvePrice, findPrice, calculateCost } from './pricing.js'
@@ -21,6 +22,7 @@ const bundledPrices: PriceMap = bundledPricesFile.models as PriceMap
 const ModelPriceSchema = z.object({
   input: z.number().nonnegative(),
   output: z.number().nonnegative(),
+  maxInputTokens: z.number().positive().optional(),
 })
 
 const TrackerConfigSchema = z.object({
@@ -67,7 +69,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
   function resolveModelPrice(model: string) {
     return resolvePrice(model, {
       bundledPrices,
-      ...(customPrices !== undefined && { customPrices }),
+      ...(customPrices !== undefined && { customPrices: customPrices as PriceMap }),
       ...(remotePrices !== undefined && { remotePrices }),
     })
   }
@@ -181,10 +183,10 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     return [header, ...rows].join('\n')
   }
 
-  function getModelInfo(model: string): import('../types/index.js').ModelPrice | null {
+  function getModelInfo(model: string): ModelPrice | null {
     return findPrice(model, {
       bundledPrices,
-      ...(customPrices !== undefined && { customPrices }),
+      ...(customPrices !== undefined && { customPrices: customPrices as PriceMap }),
       ...(remotePrices !== undefined && { remotePrices }),
     }) ?? null
   }
