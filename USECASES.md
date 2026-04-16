@@ -1,8 +1,8 @@
 # Use Cases — @diogonzafe/tokenwatch
 
-## 1. Controlo de custos por utilizador (SaaS multi-tenant)
+## 1. Per-user cost tracking (multi-tenant SaaS)
 
-Tens uma aplicação SaaS onde cada utilizador pode usar a tua feature de IA. Queres saber quanto cada um está a custar.
+You have a SaaS app where each user can access your AI feature. You want to know how much each one is costing you.
 
 ```ts
 import { createTracker, wrapOpenAI } from '@diogonzafe/tokenwatch'
@@ -11,7 +11,7 @@ import OpenAI from 'openai'
 const tracker = createTracker()
 const openai = wrapOpenAI(new OpenAI(), tracker)
 
-// Numa rota da tua API
+// In your API route
 app.post('/chat', async (req, res) => {
   const { userId, message } = req.body
 
@@ -24,7 +24,7 @@ app.post('/chat', async (req, res) => {
   res.json({ reply: response.choices[0].message.content })
 })
 
-// Rota de admin — ver quanto cada utilizador gastou
+// Admin route — see how much each user has spent
 app.get('/admin/costs', (req, res) => {
   const report = tracker.getReport()
   res.json(report.byUser)
@@ -37,9 +37,9 @@ app.get('/admin/costs', (req, res) => {
 
 ---
 
-## 2. Alerta de budget — cortar acesso quando o limite é atingido
+## 2. Budget alert — block requests when limit is reached
 
-Não queres gastar mais de $10/dia em chamadas à API. Quando o limite é atingido, dispara um webhook para o teu Slack.
+You don't want to spend more than $10/day on API calls. When the limit is hit, fire a webhook to your Slack.
 
 ```ts
 const tracker = createTracker({
@@ -47,11 +47,11 @@ const tracker = createTracker({
   webhookUrl: 'https://hooks.slack.com/services/...',
 })
 
-// O webhook é disparado automaticamente quando totalCostUSD >= 10
+// Webhook fires automatically when totalCostUSD >= 10
 // Payload: { "text": "[tokenwatch] Alert: total cost reached $10.0031 USD (threshold: $10)" }
 ```
 
-Para bloquear chamadas após o limite, verifica antes de cada request:
+To block requests after the limit, check before each call:
 
 ```ts
 function isOverBudget(): boolean {
@@ -68,16 +68,16 @@ app.post('/chat', async (req, res) => {
 
 ---
 
-## 3. Tracking por sessão de conversa
+## 3. Per-conversation session tracking
 
-Cada conversa do utilizador é uma sessão separada. Queres saber o custo de cada thread.
+Each user conversation is a separate session. You want to know the cost of each thread.
 
 ```ts
 import { randomUUID } from 'node:crypto'
 
 const sessionId = randomUUID()
 
-// Todas as chamadas desta conversa
+// All calls in this conversation
 for (const message of conversation) {
   await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -91,15 +91,15 @@ const report = tracker.getReport()
 console.log(report.bySession[sessionId])
 // { costUSD: 0.023, calls: 4 }
 
-// Limpar só esta sessão sem afectar as outras
+// Clear only this session without affecting others
 tracker.resetSession(sessionId)
 ```
 
 ---
 
-## 4. Comparar custo entre modelos
+## 4. Compare cost across models
 
-Estás a avaliar qual o modelo mais económico para o teu caso de uso.
+You are evaluating which model is the most cost-effective for your use case.
 
 ```ts
 const models = ['gpt-4o', 'gpt-4o-mini', 'claude-haiku-4-5', 'gemini-2.5-flash']
@@ -119,21 +119,21 @@ const report = tracker.getReport()
 for (const [model, stats] of Object.entries(report.bySession)) {
   console.log(`${model}: $${stats.costUSD.toFixed(6)} (${stats.calls} call)`)
 }
-// gpt-4o:          $0.002500
-// gpt-4o-mini:     $0.000150
+// gpt-4o:           $0.002500
+// gpt-4o-mini:      $0.000150
 // claude-haiku-4-5: $0.000800
 // gemini-2.5-flash: $0.000200
 ```
 
 ---
 
-## 5. Verificar janela de contexto antes de enviar
+## 5. Check context window before sending
 
-Antes de fazer a chamada, verifica se o teu input cabe no contexto do modelo — sem consultar documentação.
+Before making a call, verify your input fits the model's context window — without checking the docs.
 
 ```ts
 function countTokens(text: string): number {
-  // estimativa simples: ~4 chars por token
+  // simple estimate: ~4 chars per token
   return Math.ceil(text.length / 4)
 }
 
@@ -158,15 +158,15 @@ async function safeSend(model: string, prompt: string) {
 
 ---
 
-## 6. Exportar relatório diário para CSV
+## 6. Export daily cost report to CSV
 
-Tens um job nocturno que exporta os custos do dia para análise.
+You have a nightly job that exports the day's costs for analysis.
 
 ```ts
 import { writeFileSync } from 'node:fs'
 
-// Corre todo o dia com createTracker({ storage: 'sqlite' })
-// No fim do dia:
+// Runs all day with createTracker({ storage: 'sqlite' })
+// At end of day:
 
 const date = new Date().toISOString().slice(0, 10)
 const csv = tracker.exportCSV()
@@ -181,9 +181,9 @@ tracker.reset()
 
 ---
 
-## 7. DeepSeek como alternativa económica ao GPT-4o
+## 7. DeepSeek as a cheaper alternative to GPT-4o
 
-Tens código que usa GPT-4o mas queres testar o DeepSeek sem alterar a lógica.
+You have code using GPT-4o but want to test DeepSeek without changing your logic.
 
 ```ts
 import OpenAI from 'openai'
@@ -197,21 +197,21 @@ const deepseek = wrapDeepSeek(
   tracker,
 )
 
-// Mesma interface que o OpenAI wrapper
+// Same interface as the OpenAI wrapper
 const res = await deepseek.chat.completions.create({
   model: 'deepseek-chat',
   messages: [{ role: 'user', content: 'Hello' }],
   __userId: 'user_001',
 })
 
-// Custo: $0.28/1M input vs $2.50/1M do gpt-4o — ~9x mais barato
+// Cost: $0.28/1M input vs $2.50/1M for gpt-4o — ~9x cheaper
 ```
 
 ---
 
-## 8. Multi-provider com tracker partilhado
+## 8. Multi-provider with a shared tracker
 
-O teu app usa vários providers ao mesmo tempo. Queres um relatório unificado.
+Your app uses multiple providers at the same time. You want a single unified report.
 
 ```ts
 import { createTracker, wrapOpenAI, wrapAnthropic, wrapGemini } from '@diogonzafe/tokenwatch'
@@ -225,8 +225,8 @@ const openai    = wrapOpenAI(new OpenAI(), tracker)
 const anthropic = wrapAnthropic(new Anthropic(), tracker)
 const gemini    = wrapGemini(new GoogleGenerativeAI(process.env.GEMINI_API_KEY), tracker)
 
-// Cada provider usa o mesmo tracker
-// getReport() agrega tudo junto
+// All providers share the same tracker
+// getReport() aggregates everything together
 const report = tracker.getReport()
 console.log(`Total: $${report.totalCostUSD.toFixed(4)}`)
 console.log(report.byModel)
@@ -239,33 +239,33 @@ console.log(report.byModel)
 
 ---
 
-## 9. Preços custom para modelos self-hosted ou fine-tuned
+## 9. Custom prices for self-hosted or fine-tuned models
 
-Tens um modelo fine-tuned ou self-hosted com custos diferentes dos padrão.
+You have a fine-tuned or self-hosted model with different costs than the defaults.
 
 ```ts
 const tracker = createTracker({
   customPrices: {
-    'gpt-4o-finetuned-v1': { input: 3.75, output: 15.00 }, // fine-tune tem preço diferente
-    'llama-3-70b-self-hosted': { input: 0.05, output: 0.10 }, // custo do teu hardware
+    'gpt-4o-finetuned-v1':     { input: 3.75, output: 15.00 }, // fine-tune pricing
+    'llama-3-70b-self-hosted': { input: 0.05, output: 0.10  }, // your hardware cost
   },
 })
 ```
 
 ---
 
-## 10. Persistência entre restarts com SQLite
+## 10. Persistent tracking across restarts with SQLite
 
-Para aplicações de longa duração onde queres histórico acumulado.
+For long-running applications where you want accumulated history.
 
 ```ts
 // npm install better-sqlite3
 
 const tracker = createTracker({ storage: 'sqlite' })
-// Dados guardados em ~/.tokenwatch/usage.db
-// Sobrevivem a restarts do processo
+// Data stored in ~/.tokenwatch/usage.db
+// Survives process restarts
 
-// Após uma semana de uso:
+// After a week of usage:
 const report = tracker.getReport()
-console.log(`Custo total da semana: $${report.totalCostUSD.toFixed(2)}`)
+console.log(`Total cost this week: $${report.totalCostUSD.toFixed(2)}`)
 ```
