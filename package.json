@@ -1,5 +1,5 @@
 {
-  "name": "tokenwatch",
+  "name": "@diogonzafe/tokenwatch",
   "version": "0.1.0",
   "description": "Transparent wrapper to track LLM API costs in real-time by session, user and model",
   "author": "diogonzafe",
