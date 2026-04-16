@@ -102,10 +102,14 @@ async function* wrapStream(
     lastChunk = chunk
     yield chunk
   }
-  if (lastChunk?.usage) {
-    const { inputTokens, outputTokens } = extractUsage(lastChunk.usage)
-    trackWithMeta(tracker, model, inputTokens, outputTokens, sessionId, userId)
+  const { inputTokens, outputTokens } = extractUsage(lastChunk?.usage)
+  if (!lastChunk?.usage) {
+    console.warn(
+      `[tokenwatch] No usage data in stream for model "${model}". Cost recorded as $0. ` +
+        `Pass stream_options: { include_usage: true } to get accurate costs.`,
+    )
   }
+  trackWithMeta(tracker, model, inputTokens, outputTokens, sessionId, userId)
 }
 
 // ─── Public wrapper ───────────────────────────────────────────────────────────

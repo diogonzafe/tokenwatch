@@ -102,9 +102,7 @@ async function* wrapStream(
     }
   }
 
-  if (inputTokens > 0 || outputTokens > 0) {
-    trackWithMeta(tracker, model, inputTokens, outputTokens, sessionId, userId)
-  }
+  trackWithMeta(tracker, model, inputTokens, outputTokens, sessionId, userId)
 }
 
 // ─── Public wrapper ───────────────────────────────────────────────────────────

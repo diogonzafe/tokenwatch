@@ -26,7 +26,7 @@ npm install better-sqlite3          # optional — only for storage: 'sqlite'
 ```ts
 import { createTracker } from '@diogonzafe/tokenwatch'
 
-const tracker = await createTracker({
+const tracker = createTracker({
   // All fields are optional
   storage: 'memory',           // 'memory' (default) | 'sqlite'
   alertThreshold: 1.00,        // USD — fires webhookUrl when exceeded
@@ -201,7 +201,7 @@ npm install better-sqlite3
 ```
 
 ```ts
-const tracker = await createTracker({ storage: 'sqlite' })
+const tracker = createTracker({ storage: 'sqlite' })
 // Data stored in ~/.tokenwatch/usage.db
 ```
 
@@ -210,7 +210,7 @@ const tracker = await createTracker({ storage: 'sqlite' })
 ## Alerts & Webhooks
 
 ```ts
-const tracker = await createTracker({
+const tracker = createTracker({
   alertThreshold: 5.00,                          // USD
   webhookUrl: 'https://hooks.slack.com/...',     // or Discord
 })

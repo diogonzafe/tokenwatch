@@ -11,7 +11,7 @@ Transparent TypeScript wrapper that intercepts LLM API calls (OpenAI, Anthropic,
 
 ## Public API
 
-### createTracker(config?) → Promise<Tracker>
+### createTracker(config?) → Tracker
 Config fields (all optional):
 - storage: 'memory' | 'sqlite'  — default 'memory'
 - alertThreshold: number         — USD, fires webhook once when exceeded
