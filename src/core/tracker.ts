@@ -9,7 +9,7 @@ import type {
   UserStats,
   PriceMap,
 } from '../types/index.js'
-import { resolvePrice, calculateCost } from './pricing.js'
+import { resolvePrice, findPrice, calculateCost } from './pricing.js'
 import { createStorage } from './storage.js'
 import { getRemotePrices } from './sync.js'
 import bundledPricesFile from '../../prices.json' assert { type: 'json' }
@@ -181,7 +181,15 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     return [header, ...rows].join('\n')
   }
 
-  return { track, getReport, reset, resetSession, exportJSON, exportCSV }
+  function getModelInfo(model: string): import('../types/index.js').ModelPrice | null {
+    return findPrice(model, {
+      bundledPrices,
+      ...(customPrices !== undefined && { customPrices }),
+      ...(remotePrices !== undefined && { remotePrices }),
+    }) ?? null
+  }
+
+  return { track, getReport, reset, resetSession, exportJSON, exportCSV, getModelInfo }
 }
 
 function computeTotal(entries: UsageEntry[]): number {

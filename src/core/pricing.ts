@@ -33,6 +33,26 @@ export function resolvePrice(
 }
 
 /**
+ * Find price for a model without the zero-cost fallback.
+ * Returns undefined if the model is not found in any layer.
+ */
+export function findPrice(
+  model: string,
+  layers: {
+    customPrices?: PriceMap
+    remotePrices?: PriceMap
+    bundledPrices: PriceMap
+  },
+): ModelPrice | undefined {
+  const { customPrices, remotePrices, bundledPrices } = layers
+  return (
+    lookupInMap(model, customPrices) ??
+    lookupInMap(model, remotePrices) ??
+    lookupInMap(model, bundledPrices)
+  )
+}
+
+/**
  * Look up a model in a PriceMap using:
  *   1. exact key match
  *   2. prefix match  — map key is a prefix of the model string (e.g. "gpt-4o" matches "gpt-4o-2024-11-20")

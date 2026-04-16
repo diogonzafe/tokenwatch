@@ -90,6 +90,8 @@ export interface Tracker {
   resetSession(sessionId: string): void
   exportJSON(): string
   exportCSV(): string
+  /** Returns price and context window info for a model, or null if unknown */
+  getModelInfo(model: string): ModelPrice | null
 }
 
 // ─── Wrapper meta fields ──────────────────────────────────────────────────────
