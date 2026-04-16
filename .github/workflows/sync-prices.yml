@@ -1,0 +1,74 @@
+name: Sync LLM Prices
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright + Chromium
+        run: |
+          npm install -D playwright
+          npx playwright install chromium --with-deps
+
+      - name: Scrape prices
+        run: node scripts/scrape-prices.mjs
+
+      - name: Check for diff
+        id: diff
+        run: |
+          if git diff --quiet prices.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version, commit, push and publish
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage prices.json first, bump patch (also stages package*.json)
+          git add prices.json
+          npm version patch --no-git-tag-version
+          git add package.json package-lock.json
+
+          git commit -m "chore: sync prices $DATE"
+
+          # Tag the new version
+          VERSION=$(node -p "require('./package.json').version")
+          git tag "v$VERSION"
+
+          git push origin HEAD --follow-tags
+
+          # Build and publish to npm
+          npm run build
+          npm publish --access public
