@@ -138,6 +138,30 @@ describe('createTracker', () => {
   })
 })
 
+describe('getModelInfo', () => {
+  it('returns price and maxInputTokens for a known model', () => {
+    const tracker = makeTracker()
+    const info = tracker.getModelInfo('gpt-4o')
+    expect(info).not.toBeNull()
+    expect(info?.input).toBeGreaterThan(0)
+    expect(info?.output).toBeGreaterThan(0)
+    expect(info?.maxInputTokens).toBeGreaterThan(0)
+  })
+
+  it('returns null for an unknown model', () => {
+    const tracker = makeTracker()
+    expect(tracker.getModelInfo('totally-unknown-model-xyz')).toBeNull()
+  })
+
+  it('returns customPrices entry when provided', () => {
+    const tracker = makeTracker({
+      customPrices: { 'my-model': { input: 7, output: 14, maxInputTokens: 32000 } },
+    })
+    const info = tracker.getModelInfo('my-model')
+    expect(info).toEqual({ input: 7, output: 14, maxInputTokens: 32000 })
+  })
+})
+
 describe('createTracker — zod config validation', () => {
   it('throws on invalid storage value', () => {
     expect(() =>

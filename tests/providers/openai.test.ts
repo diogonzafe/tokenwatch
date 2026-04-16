@@ -124,6 +124,33 @@ describe('wrapOpenAI', () => {
     expect(result).toEqual(expectedResponse)
   })
 
+  it('records $0 and warns when stream has no usage data', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const tracker = makeTracker()
+    const noUsageClient = {
+      chat: {
+        completions: {
+          create: vi.fn(async () => {
+            async function* gen() {
+              yield { model: 'gpt-4o', usage: null }
+              yield { model: 'gpt-4o', usage: null }
+            }
+            return gen()
+          }),
+        },
+      },
+    }
+    const wrapped = wrapOpenAI(noUsageClient, tracker)
+    const stream = await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [], stream: true })
+    for await (const _ of stream as AsyncIterable<unknown>) { /* consume */ }
+
+    const report = tracker.getReport()
+    expect(report.byModel['gpt-4o']?.calls).toBe(1)   // call IS recorded
+    expect(report.totalCostUSD).toBe(0)                 // but at $0
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('include_usage'))
+    vi.restoreAllMocks()
+  })
+
   it('accumulates streaming usage from last chunk', async () => {
     const tracker = await makeTracker()
     const client = makeOpenAIClient({

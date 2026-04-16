@@ -3,18 +3,16 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fetchRemotePrices } from '../src/core/sync.js'
+import type { PricesFile } from '../src/types/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const COMMANDS = ['sync', 'prices', 'report', 'help']
 
-function loadBundledPrices(): Record<string, { input: number; output: number }> {
+function loadBundledPrices(): PricesFile['models'] {
   const pricesPath = join(__dirname, '..', 'prices.json')
   const raw = readFileSync(pricesPath, 'utf8')
-  const data = JSON.parse(raw) as {
-    updated_at: string
-    models: Record<string, { input: number; output: number }>
-  }
+  const data = JSON.parse(raw) as PricesFile
   return data.models
 }
 
