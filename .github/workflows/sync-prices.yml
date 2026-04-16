@@ -1,6 +1,6 @@
 name: Sync LLM Prices
 
-on:
+"on":
   schedule:
     # Every Monday at 06:00 UTC
     - cron: '0 6 * * 1'
