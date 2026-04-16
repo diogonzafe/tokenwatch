@@ -1,6 +1,6 @@
 {
   "name": "@diogonzafe/tokenwatch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Transparent wrapper to track LLM API costs in real-time by session, user and model",
   "author": "diogonzafe",
   "license": "MIT",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^20.17.0",
+    "playwright": "^1.59.1",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
@@ -47,10 +48,18 @@
     "openai": ">=4.68.0"
   },
   "peerDependenciesMeta": {
-    "openai": { "optional": true },
-    "@anthropic-ai/sdk": { "optional": true },
-    "@google/generative-ai": { "optional": true },
-    "better-sqlite3": { "optional": true }
+    "openai": {
+      "optional": true
+    },
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "@google/generative-ai": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
+    }
   },
   "keywords": [
     "llm",
