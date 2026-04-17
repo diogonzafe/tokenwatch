@@ -1,0 +1,107 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { PostgresStorage } from '../../src/adapters/postgres.js'
+import type { UsageEntry } from '../../src/types/index.js'
+
+function makeEntry(overrides: Partial<UsageEntry> = {}): UsageEntry {
+  return {
+    model: 'gpt-4o',
+    inputTokens: 100,
+    outputTokens: 50,
+    costUSD: 0.00075,
+    timestamp: '2026-04-16T10:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function makeClient(rows: unknown[] = []) {
+  return {
+    query: vi.fn().mockResolvedValue({ rows }),
+  }
+}
+
+describe('PostgresStorage', () => {
+  it('migrate() calls CREATE TABLE IF NOT EXISTS', async () => {
+    const client = makeClient()
+    const storage = new PostgresStorage(client)
+    await storage.migrate()
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS tokenwatch_usage'))
+  })
+
+  it('record() inserts a row with correct values', () => {
+    const client = makeClient()
+    const storage = new PostgresStorage(client)
+    const entry = makeEntry({ sessionId: 'sess-1', userId: 'user-1' })
+    storage.record(entry)
+    expect(client.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO tokenwatch_usage'),
+      [entry.model, entry.inputTokens, entry.outputTokens, entry.costUSD, 'sess-1', 'user-1', entry.timestamp],
+    )
+  })
+
+  it('record() uses null for missing sessionId and userId', () => {
+    const client = makeClient()
+    const storage = new PostgresStorage(client)
+    storage.record(makeEntry())
+    const args = client.query.mock.calls[0]?.[1] as unknown[]
+    expect(args[4]).toBeNull()  // session_id
+    expect(args[5]).toBeNull()  // user_id
+  })
+
+  it('getAll() maps rows to UsageEntry[]', async () => {
+    const rows = [
+      { model: 'gpt-4o', input_tokens: 100, output_tokens: 50, cost_usd: '0.00075', session_id: 'sess-1', user_id: null, timestamp: '2026-04-16T10:00:00.000Z' },
+    ]
+    const client = makeClient(rows)
+    const storage = new PostgresStorage(client)
+    const entries = await storage.getAll()
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
+      model: 'gpt-4o',
+      inputTokens: 100,
+      outputTokens: 50,
+      costUSD: 0.00075,
+      sessionId: 'sess-1',
+      timestamp: '2026-04-16T10:00:00.000Z',
+    })
+    expect(entries[0]).not.toHaveProperty('userId')
+  })
+
+  it('getAll() converts Date timestamp to ISO string', async () => {
+    const date = new Date('2026-04-16T10:00:00.000Z')
+    const rows = [
+      { model: 'gpt-4o', input_tokens: 10, output_tokens: 5, cost_usd: '0.0001', session_id: null, user_id: null, timestamp: date },
+    ]
+    const client = makeClient(rows)
+    const storage = new PostgresStorage(client)
+    const entries = await storage.getAll()
+    expect(entries[0]?.timestamp).toBe(date.toISOString())
+  })
+
+  it('clearAll() deletes all rows', async () => {
+    const client = makeClient()
+    const storage = new PostgresStorage(client)
+    await storage.clearAll()
+    expect(client.query).toHaveBeenCalledWith('DELETE FROM tokenwatch_usage')
+  })
+
+  it('clearSession() deletes rows for the given session', async () => {
+    const client = makeClient()
+    const storage = new PostgresStorage(client)
+    await storage.clearSession('sess-abc')
+    expect(client.query).toHaveBeenCalledWith(
+      'DELETE FROM tokenwatch_usage WHERE session_id = $1',
+      ['sess-abc'],
+    )
+  })
+
+  it('record() swallows errors and warns', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = { query: vi.fn().mockRejectedValue(new Error('conn error')) }
+    const storage = new PostgresStorage(client)
+    storage.record(makeEntry())
+    // Allow microtask to flush
+    await new Promise((r) => setTimeout(r, 0))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('PostgresStorage.record failed'), expect.any(Error))
+    vi.restoreAllMocks()
+  })
+})

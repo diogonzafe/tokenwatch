@@ -17,6 +17,11 @@ npm install openai                  # OpenAI / DeepSeek
 npm install @anthropic-ai/sdk       # Anthropic
 npm install @google/generative-ai   # Gemini
 npm install better-sqlite3          # optional — only for storage: 'sqlite'
+
+# Database adapters (optional — only if using @diogonzafe/tokenwatch/adapters)
+npm install pg          # PostgreSQL
+npm install mysql2      # MySQL / MariaDB
+npm install mongodb     # MongoDB
 ```
 
 ---
@@ -28,7 +33,7 @@ import { createTracker } from '@diogonzafe/tokenwatch'
 
 const tracker = createTracker({
   // All fields are optional
-  storage: 'memory',           // 'memory' (default) | 'sqlite'
+  storage: 'memory',           // 'memory' (default) | 'sqlite' | IStorage instance
   alertThreshold: 1.00,        // USD — fires webhookUrl when exceeded
   webhookUrl: 'https://...',   // Discord / Slack webhook
   syncPrices: true,            // fetch fresh prices from GitHub (default: true)
@@ -135,8 +140,10 @@ const res = await deepseek.chat.completions.create({
 
 ## Reports
 
+All report methods are async:
+
 ```ts
-tracker.getReport()
+const report = await tracker.getReport()
 // {
 //   totalCostUSD: 0.087,
 //   totalTokens: { input: 24000, output: 6000 },
@@ -151,12 +158,12 @@ tracker.getReport()
 
 tracker.getModelInfo('gpt-4o')
 // { input: 2.5, output: 10, maxInputTokens: 128000 }
-// Returns null if the model is unknown
+// Returns null if the model is unknown (synchronous)
 
-tracker.reset()                     // clear all data
-tracker.resetSession('session_abc') // clear one session
-tracker.exportJSON()                // full report as JSON string
-tracker.exportCSV()                 // all calls as CSV string
+await tracker.reset()                     // clear all data
+await tracker.resetSession('session_abc') // clear one session
+await tracker.exportJSON()                // full report as JSON string
+await tracker.exportCSV()                 // all calls as CSV string
 ```
 
 ---
@@ -167,7 +174,7 @@ Prices are resolved in this priority order:
 
 1. **`customPrices`** — your own overrides, highest priority
 2. **Remote `prices.json`** — fetched from GitHub, cached for 24h in `~/.tokenwatch/prices.json`
-3. **Bundled `prices.json`** — always-present fallback, updated weekly via GitHub Action
+3. **Bundled `prices.json`** — always-present fallback, updated daily via GitHub Action
 
 If a model is not found in any layer, cost is recorded as **$0** with a `console.warn`.
 
@@ -188,11 +195,20 @@ Prices are in **USD per 1 million tokens**.
 }
 ```
 
-Prices are updated every Monday via a GitHub Action that pulls from the [LiteLLM community model registry](https://github.com/BerriAI/litellm). New models are auto-discovered — no manual updates needed.
+Prices are updated every day via a GitHub Action that pulls from the [LiteLLM community model registry](https://github.com/BerriAI/litellm). New models are auto-discovered — no manual updates needed.
 
 ---
 
-## SQLite Storage
+## Storage
+
+### In-memory (default)
+
+```ts
+const tracker = createTracker({ storage: 'memory' })
+// Resets on process restart. Good for short-lived processes and testing.
+```
+
+### SQLite
 
 For persistent tracking across restarts:
 
@@ -203,6 +219,76 @@ npm install better-sqlite3
 ```ts
 const tracker = createTracker({ storage: 'sqlite' })
 // Data stored in ~/.tokenwatch/usage.db
+```
+
+### PostgreSQL
+
+```bash
+npm install pg
+```
+
+```ts
+import { Pool } from 'pg'
+import { createTracker } from '@diogonzafe/tokenwatch'
+import { PostgresStorage } from '@diogonzafe/tokenwatch/adapters'
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const storage = new PostgresStorage(pool)
+await storage.migrate()   // creates tokenwatch_usage table if it doesn't exist
+
+const tracker = createTracker({ storage })
+```
+
+### MySQL / MariaDB
+
+```bash
+npm install mysql2
+```
+
+```ts
+import mysql from 'mysql2/promise'
+import { MySQLStorage } from '@diogonzafe/tokenwatch/adapters'
+
+const pool = mysql.createPool({ uri: process.env.MYSQL_URL })
+const storage = new MySQLStorage(pool)
+await storage.migrate()
+
+const tracker = createTracker({ storage })
+```
+
+### MongoDB
+
+```bash
+npm install mongodb
+```
+
+```ts
+import { MongoClient } from 'mongodb'
+import { MongoStorage } from '@diogonzafe/tokenwatch/adapters'
+
+const client = new MongoClient(process.env.MONGO_URL!)
+await client.connect()
+const storage = new MongoStorage(client.db('myapp'))
+await storage.createIndexes()  // optional but recommended
+
+const tracker = createTracker({ storage })
+```
+
+### Custom adapter
+
+Any object that implements `IStorage` works:
+
+```ts
+import type { IStorage, UsageEntry } from '@diogonzafe/tokenwatch'
+
+class RedisStorage implements IStorage {
+  record(entry: UsageEntry): void { /* ... */ }
+  async getAll(): Promise<UsageEntry[]> { /* ... */ }
+  async clearAll(): Promise<void> { /* ... */ }
+  async clearSession(sessionId: string): Promise<void> { /* ... */ }
+}
+
+const tracker = createTracker({ storage: new RedisStorage() })
 ```
 
 ---
@@ -235,13 +321,23 @@ npx tokenwatch help     # show help
 
 ---
 
+## Privacy & Security
+
+- Prompt and response **content is never read or stored** — only token counts and model names
+- API keys are **never accessed** by tokenwatch — they remain solely in the provider client
+- SQLite, Postgres, MySQL, and MongoDB data stays **entirely in your own infrastructure** — nothing is transmitted to external services
+- The wrapper is a thin `Proxy` with **no outbound network calls** of its own (only the daily price sync script fetches external data)
+
+---
+
 ## Behaviour Guarantees
 
 - `__sessionId` and `__userId` are **stripped before** the request reaches the API
 - The response object returned is **identical** to the original SDK response
-- Tracking operations are **synchronous and non-blocking** — zero latency added
+- `track()` is **synchronous and non-blocking** — zero latency added to API calls
 - If the API call **fails**, no cost is recorded and the original error is re-thrown unchanged
 - Streaming is fully supported — usage is accumulated from the final stream event
+- Database writes from `record()` are **fire-and-forget** — a storage failure never interrupts your API call
 
 ---
 
