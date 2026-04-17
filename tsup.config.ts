@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     cli: 'bin/cli.ts',
+    adapters: 'src/adapters/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,
@@ -16,5 +17,8 @@ export default defineConfig({
     '@anthropic-ai/sdk',
     '@google/generative-ai',
     'better-sqlite3',
+    'pg',
+    'mysql2',
+    'mongodb',
   ],
 })

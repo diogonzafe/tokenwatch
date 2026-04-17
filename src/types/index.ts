@@ -20,8 +20,8 @@ export interface PricesFile {
 // ─── Tracker config ───────────────────────────────────────────────────────────
 
 export interface TrackerConfig {
-  /** 'memory' (default) or 'sqlite' */
-  storage?: 'memory' | 'sqlite'
+  /** 'memory' (default), 'sqlite', or a custom IStorage instance (e.g. PostgresStorage, MySQLStorage, MongoStorage) */
+  storage?: 'memory' | 'sqlite' | IStorage
   /** USD threshold — fires webhookUrl when totalCostUSD exceeds this */
   alertThreshold?: number
   /** Discord / Slack / generic webhook URL */
@@ -74,10 +74,11 @@ export interface Report {
 // ─── Storage interface ────────────────────────────────────────────────────────
 
 export interface IStorage {
-  record(entry: UsageEntry): void
-  getAll(): UsageEntry[]
-  clearAll(): void
-  clearSession(sessionId: string): void
+  /** Fire-and-forget — implementations may write async and swallow errors internally */
+  record(entry: UsageEntry): void | Promise<void>
+  getAll(): UsageEntry[] | Promise<UsageEntry[]>
+  clearAll(): void | Promise<void>
+  clearSession(sessionId: string): void | Promise<void>
 }
 
 // ─── Public Tracker interface ─────────────────────────────────────────────────
@@ -85,11 +86,11 @@ export interface IStorage {
 export interface Tracker {
   /** Accumulate a usage entry (called by providers) */
   track(entry: Omit<UsageEntry, 'costUSD' | 'timestamp'>): void
-  getReport(): Report
-  reset(): void
-  resetSession(sessionId: string): void
-  exportJSON(): string
-  exportCSV(): string
+  getReport(): Promise<Report>
+  reset(): Promise<void>
+  resetSession(sessionId: string): Promise<void>
+  exportJSON(): Promise<string>
+  exportCSV(): Promise<string>
   /** Returns price and context window info for a model, or null if unknown */
   getModelInfo(model: string): ModelPrice | null
 }

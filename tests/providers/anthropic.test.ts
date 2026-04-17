@@ -32,7 +32,7 @@ function makeAnthropicClient(overrides?: { isStream?: boolean }) {
 
 describe('wrapAnthropic', () => {
   it('strips __sessionId and __userId before sending to API', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeAnthropicClient()
     const wrapped = wrapAnthropic(client, tracker)
 
@@ -50,19 +50,19 @@ describe('wrapAnthropic', () => {
   })
 
   it('records usage from non-streaming response', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeAnthropicClient()
     const wrapped = wrapAnthropic(client, tracker)
 
     await wrapped.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 1024, messages: [] })
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(100)
     expect(report.totalTokens.output).toBe(40)
   })
 
   it('does NOT record cost when API throws', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const errorClient = {
       messages: { create: vi.fn().mockRejectedValue(new Error('Auth error')) },
     }
@@ -70,11 +70,11 @@ describe('wrapAnthropic', () => {
     await expect(
       wrapped.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 1024, messages: [] }),
     ).rejects.toThrow('Auth error')
-    expect(tracker.getReport().totalCostUSD).toBe(0)
+    expect((await tracker.getReport()).totalCostUSD).toBe(0)
   })
 
   it('accumulates streaming usage from message_start + message_delta events', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeAnthropicClient({ isStream: true })
     const wrapped = wrapAnthropic(client, tracker)
 
@@ -89,13 +89,13 @@ describe('wrapAnthropic', () => {
       // consume
     }
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(120)
     expect(report.totalTokens.output).toBe(30)
   })
 
   it('records sessionId and userId', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeAnthropicClient()
     const wrapped = wrapAnthropic(client, tracker)
 
@@ -107,7 +107,7 @@ describe('wrapAnthropic', () => {
       __userId: 'anthropic-user',
     } as Record<string, unknown>)
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.bySession['anthropic-sess']).toBeDefined()
     expect(report.byUser['anthropic-user']).toBeDefined()
   })

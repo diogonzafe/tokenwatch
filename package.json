@@ -13,6 +13,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./adapters": {
+      "types": "./dist/adapters.d.ts",
+      "import": "./dist/adapters.js",
+      "require": "./dist/adapters.cjs"
     }
   },
   "bin": {
@@ -45,7 +50,10 @@
     "@anthropic-ai/sdk": ">=0.26.0",
     "@google/generative-ai": ">=0.21.0",
     "better-sqlite3": ">=11.0.0",
-    "openai": ">=4.68.0"
+    "mongodb": ">=6.0.0",
+    "mysql2": ">=3.0.0",
+    "openai": ">=4.68.0",
+    "pg": ">=8.0.0"
   },
   "peerDependenciesMeta": {
     "openai": {
@@ -58,6 +66,15 @@
       "optional": true
     },
     "better-sqlite3": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    },
+    "mongodb": {
       "optional": true
     }
   },

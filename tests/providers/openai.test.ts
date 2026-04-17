@@ -39,7 +39,7 @@ function makeOpenAIClient(overrides?: {
 
 describe('wrapOpenAI', () => {
   it('passes through non-tracking params unchanged', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeOpenAIClient()
     const wrapped = wrapOpenAI(client, tracker)
 
@@ -48,7 +48,7 @@ describe('wrapOpenAI', () => {
   })
 
   it('strips __sessionId and __userId before sending to API', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeOpenAIClient()
     const wrapped = wrapOpenAI(client, tracker)
 
@@ -65,19 +65,19 @@ describe('wrapOpenAI', () => {
   })
 
   it('records usage after successful call', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeOpenAIClient({ usage: { prompt_tokens: 200, completion_tokens: 80 } })
     const wrapped = wrapOpenAI(client, tracker)
 
     await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [] })
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(200)
     expect(report.totalTokens.output).toBe(80)
   })
 
   it('records sessionId and userId in tracking entry', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeOpenAIClient()
     const wrapped = wrapOpenAI(client, tracker)
 
@@ -88,13 +88,13 @@ describe('wrapOpenAI', () => {
       __userId: 'user-abc',
     } as Record<string, unknown>)
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.bySession['sess-xyz']).toBeDefined()
     expect(report.byUser['user-abc']).toBeDefined()
   })
 
   it('does NOT record cost when API call throws', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const errorClient = {
       chat: {
         completions: {
@@ -108,11 +108,11 @@ describe('wrapOpenAI', () => {
       wrapped.chat.completions.create({ model: 'gpt-4o', messages: [] }),
     ).rejects.toThrow('API error')
 
-    expect(tracker.getReport().totalCostUSD).toBe(0)
+    expect((await tracker.getReport()).totalCostUSD).toBe(0)
   })
 
   it('returns the original response object unchanged', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const expectedResponse = { id: 'cmpl-999', model: 'gpt-4o', usage: { prompt_tokens: 10, completion_tokens: 5 } }
     const client = {
       chat: {
@@ -144,7 +144,7 @@ describe('wrapOpenAI', () => {
     const stream = await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [], stream: true })
     for await (const _ of stream as AsyncIterable<unknown>) { /* consume */ }
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.byModel['gpt-4o']?.calls).toBe(1)   // call IS recorded
     expect(report.totalCostUSD).toBe(0)                 // but at $0
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('include_usage'))
@@ -152,7 +152,7 @@ describe('wrapOpenAI', () => {
   })
 
   it('accumulates streaming usage from last chunk', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeOpenAIClient({
       isStream: true,
       usage: { prompt_tokens: 150, completion_tokens: 60 },
@@ -170,7 +170,7 @@ describe('wrapOpenAI', () => {
       // consume
     }
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(150)
     expect(report.totalTokens.output).toBe(60)
   })

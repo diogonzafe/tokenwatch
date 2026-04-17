@@ -25,7 +25,7 @@ describe('wrapDeepSeek', () => {
     expect(callArgs).not.toHaveProperty('__sessionId')
 
     // Usage recorded
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(200)
     expect(report.totalTokens.output).toBe(80)
     expect(report.bySession['ds-sess']).toBeDefined()

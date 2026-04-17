@@ -60,7 +60,7 @@ describe('Full integration — create tracker → wrap → call → report', () 
     const geminiModel = wrappedGemini.getGenerativeModel({ model: 'gemini-2.5-flash' })
     await geminiModel.generateContent('test prompt')
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
 
     // Total tokens: 1000+500+300 input, 500+200+100 output
     expect(report.totalTokens.input).toBe(1800)
@@ -97,8 +97,8 @@ describe('Full integration — create tracker → wrap → call → report', () 
     const wrapped = wrapOpenAI(client, tracker)
     await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [] })
 
-    tracker.reset()
-    const report = tracker.getReport()
+    await tracker.reset()
+    const report = await tracker.getReport()
     expect(report.totalCostUSD).toBe(0)
     expect(report.totalTokens).toEqual({ input: 0, output: 0 })
     expect(report.byModel).toEqual({})
@@ -119,11 +119,11 @@ describe('Full integration — create tracker → wrap → call → report', () 
     const wrapped = wrapOpenAI(client, tracker)
     await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [] })
 
-    const json = tracker.exportJSON()
+    const json = await tracker.exportJSON()
     const parsed = JSON.parse(json) as { totalCostUSD: number }
     expect(parsed.totalCostUSD).toBeGreaterThan(0)
 
-    const csv = tracker.exportCSV()
+    const csv = await tracker.exportCSV()
     const lines = csv.trim().split('\n')
     expect(lines[0]).toContain('model')
     expect(lines).toHaveLength(2) // header + 1 row

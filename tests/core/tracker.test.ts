@@ -9,8 +9,8 @@ function makeTracker(overrides = {}) {
 
 describe('createTracker', () => {
   it('creates a tracker with zero totals', async () => {
-    const tracker = await makeTracker()
-    const report = tracker.getReport()
+    const tracker = makeTracker()
+    const report = await tracker.getReport()
     expect(report.totalCostUSD).toBe(0)
     expect(report.totalTokens).toEqual({ input: 0, output: 0 })
     expect(report.byModel).toEqual({})
@@ -19,86 +19,86 @@ describe('createTracker', () => {
   })
 
   it('accumulates cost by model', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     tracker.track({ model: 'gpt-4o', inputTokens: 1_000_000, outputTokens: 0 })
     tracker.track({ model: 'gpt-4o', inputTokens: 0, outputTokens: 1_000_000 })
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     // gpt-4o: $2.50/M input + $10/M output
     expect(report.totalCostUSD).toBeCloseTo(2.5 + 10.0)
     expect(report.byModel['gpt-4o']?.calls).toBe(2)
   })
 
   it('accumulates by session', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500, sessionId: 'sess-1' })
     tracker.track({ model: 'gpt-4o', inputTokens: 2000, outputTokens: 1000, sessionId: 'sess-2' })
     tracker.track({ model: 'gpt-4o', inputTokens: 500, outputTokens: 200, sessionId: 'sess-1' })
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.bySession['sess-1']?.calls).toBe(2)
     expect(report.bySession['sess-2']?.calls).toBe(1)
   })
 
   it('accumulates by user', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500, userId: 'user-a' })
     tracker.track({ model: 'gpt-4o', inputTokens: 500, outputTokens: 200, userId: 'user-a' })
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.byUser['user-a']?.calls).toBe(2)
   })
 
   it('reset() clears all state', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500 })
-    tracker.reset()
-    const report = tracker.getReport()
+    await tracker.reset()
+    const report = await tracker.getReport()
     expect(report.totalCostUSD).toBe(0)
     expect(report.byModel).toEqual({})
   })
 
   it('resetSession() removes only that session', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500, sessionId: 'keep' })
     tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500, sessionId: 'drop' })
-    tracker.resetSession('drop')
-    const report = tracker.getReport()
+    await tracker.resetSession('drop')
+    const report = await tracker.getReport()
     expect(report.bySession['keep']).toBeDefined()
     expect(report.bySession['drop']).toBeUndefined()
   })
 
   it('exportJSON() returns valid JSON matching getReport()', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500 })
-    const json = tracker.exportJSON()
+    const json = await tracker.exportJSON()
     expect(() => JSON.parse(json)).not.toThrow()
-    expect(JSON.parse(json)).toMatchObject(tracker.getReport())
+    expect(JSON.parse(json)).toMatchObject(await tracker.getReport())
   })
 
   it('exportCSV() returns CSV with header and one row per call', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500 })
     tracker.track({ model: 'gpt-4o-mini', inputTokens: 500, outputTokens: 200 })
-    const csv = tracker.exportCSV()
+    const csv = await tracker.exportCSV()
     const lines = csv.split('\n')
     expect(lines[0]).toBe('timestamp,model,inputTokens,outputTokens,costUSD,sessionId,userId')
     expect(lines).toHaveLength(3) // header + 2 rows
   })
 
   it('customPrices overrides bundled prices', async () => {
-    const tracker = await makeTracker({
+    const tracker = makeTracker({
       customPrices: { 'gpt-4o': { input: 100, output: 100 } },
     })
     tracker.track({ model: 'gpt-4o', inputTokens: 1_000_000, outputTokens: 1_000_000 })
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalCostUSD).toBeCloseTo(200)
   })
 
   it('unknown model records zero cost and does not throw', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     expect(() => {
       tracker.track({ model: 'totally-unknown-xyz', inputTokens: 1000, outputTokens: 500 })
     }).not.toThrow()
-    expect(tracker.getReport().totalCostUSD).toBe(0)
+    expect((await tracker.getReport()).totalCostUSD).toBe(0)
     vi.restoreAllMocks()
   })
 
@@ -106,7 +106,7 @@ describe('createTracker', () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: true } as Response)
     global.fetch = mockFetch
 
-    const tracker = await makeTracker({
+    const tracker = makeTracker({
       alertThreshold: 0.000001, // very low threshold
       webhookUrl: 'https://hooks.example.com/webhook',
     })
@@ -125,7 +125,7 @@ describe('createTracker', () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: true } as Response)
     global.fetch = mockFetch
 
-    const tracker = await makeTracker({
+    const tracker = makeTracker({
       alertThreshold: 0.000001,
       webhookUrl: 'https://hooks.example.com/webhook',
     })

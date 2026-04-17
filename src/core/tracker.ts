@@ -9,6 +9,7 @@ import type {
   UserStats,
   ModelPrice,
   PriceMap,
+  IStorage,
 } from '../types/index.js'
 import { resolvePrice, findPrice, calculateCost } from './pricing.js'
 import { createStorage } from './storage.js'
@@ -25,8 +26,18 @@ const ModelPriceSchema = z.object({
   maxInputTokens: z.number().positive().optional(),
 })
 
+// storage can be a string enum or an IStorage instance — validated separately
 const TrackerConfigSchema = z.object({
-  storage: z.enum(['memory', 'sqlite']).optional().default('memory'),
+  storage: z.union([z.enum(['memory', 'sqlite']), z.custom<IStorage>((v) => {
+    return (
+      v !== null &&
+      typeof v === 'object' &&
+      typeof (v as IStorage).record === 'function' &&
+      typeof (v as IStorage).getAll === 'function' &&
+      typeof (v as IStorage).clearAll === 'function' &&
+      typeof (v as IStorage).clearSession === 'function'
+    )
+  })]).optional().default('memory'),
   alertThreshold: z.number().positive().optional(),
   webhookUrl: z.string().url().optional(),
   syncPrices: z.boolean().optional().default(true),
@@ -41,14 +52,17 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
   }
 
   const {
-    storage: storageType,
+    storage: storageOption,
     alertThreshold,
     webhookUrl,
     syncPrices,
     customPrices,
   } = parsed.data
 
-  const storage = createStorage(storageType)
+  const storage: IStorage =
+    typeof storageOption === 'object'
+      ? storageOption
+      : createStorage(storageOption)
 
   // Fetch remote prices in the background — bundled prices are used as fallback
   // until the sync resolves. Zero latency added to createTracker().
@@ -88,24 +102,32 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
 
   function maybeFireAlert(): void {
     if (!alertThreshold || !webhookUrl || alertFired) return
-    const total = computeTotal(storage.getAll())
-    if (total >= alertThreshold) {
-      alertFired = true
+    // Claim the slot before going async — prevents double-fire when two
+    // track() calls happen before the first Promise resolves.
+    alertFired = true
+    Promise.resolve(storage.getAll()).then((entries) => {
+      const total = computeTotal(entries)
+      if (total < alertThreshold!) {
+        alertFired = false // threshold not yet reached — release the slot
+        return
+      }
       const payload = {
         text: `[tokenwatch] Alert: total cost reached $${total.toFixed(4)} USD (threshold: $${alertThreshold})`,
       }
-      fetch(webhookUrl, {
+      fetch(webhookUrl!, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       }).catch(() => {
         // fire-and-forget
       })
-    }
+    }).catch(() => {
+      alertFired = false // best-effort — release slot on storage error
+    })
   }
 
-  function getReport(): Report {
-    const entries = storage.getAll()
+  async function getReport(): Promise<Report> {
+    const entries = await Promise.resolve(storage.getAll())
     const byModel: Record<string, ModelStats> = {}
     const bySession: Record<string, SessionStats> = {}
     const byUser: Record<string, UserStats> = {}
@@ -153,21 +175,21 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     }
   }
 
-  function reset(): void {
-    storage.clearAll()
+  async function reset(): Promise<void> {
+    await Promise.resolve(storage.clearAll())
     alertFired = false
   }
 
-  function resetSession(sessionId: string): void {
-    storage.clearSession(sessionId)
+  async function resetSession(sessionId: string): Promise<void> {
+    await Promise.resolve(storage.clearSession(sessionId))
   }
 
-  function exportJSON(): string {
-    return JSON.stringify(getReport(), null, 2)
+  async function exportJSON(): Promise<string> {
+    return JSON.stringify(await getReport(), null, 2)
   }
 
-  function exportCSV(): string {
-    const entries = storage.getAll()
+  async function exportCSV(): Promise<string> {
+    const entries = await Promise.resolve(storage.getAll())
     const header = 'timestamp,model,inputTokens,outputTokens,costUSD,sessionId,userId'
     const rows = entries.map((e) =>
       [

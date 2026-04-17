@@ -36,32 +36,32 @@ function makeGeminiClient() {
 
 describe('wrapGemini', () => {
   it('records usage from generateContent', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeGeminiClient()
     const wrapped = wrapGemini(client, tracker)
 
     const model = wrapped.getGenerativeModel({ model: 'gemini-2.5-flash' })
     await model.generateContent('Hello')
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(80)
     expect(report.totalTokens.output).toBe(35)
   })
 
   it('records model name correctly', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeGeminiClient()
     const wrapped = wrapGemini(client, tracker)
 
     const model = wrapped.getGenerativeModel({ model: 'gemini-2.5-pro' })
     await model.generateContent('Hello')
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.byModel['gemini-2.5-pro']).toBeDefined()
   })
 
   it('does NOT record cost when generateContent throws', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const errorClient = {
       getGenerativeModel: vi.fn().mockReturnValue({
         generateContent: vi.fn().mockRejectedValue(new Error('API error')),
@@ -72,11 +72,11 @@ describe('wrapGemini', () => {
 
     const model = wrapped.getGenerativeModel({ model: 'gemini-2.5-flash' })
     await expect(model.generateContent('Hello')).rejects.toThrow('API error')
-    expect(tracker.getReport().totalCostUSD).toBe(0)
+    expect((await tracker.getReport()).totalCostUSD).toBe(0)
   })
 
   it('records usage from generateContentStream via response promise', async () => {
-    const tracker = await makeTracker()
+    const tracker = makeTracker()
     const client = makeGeminiClient()
     const wrapped = wrapGemini(client, tracker)
 
@@ -93,7 +93,7 @@ describe('wrapGemini', () => {
     // Allow microtask to flush
     await new Promise((r) => setTimeout(r, 0))
 
-    const report = tracker.getReport()
+    const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(90)
     expect(report.totalTokens.output).toBe(45)
   })
