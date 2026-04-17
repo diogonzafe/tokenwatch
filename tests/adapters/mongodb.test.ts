@@ -14,13 +14,17 @@ function makeEntry(overrides: Partial<UsageEntry> = {}): UsageEntry {
 }
 
 function makeDb(docs: unknown[] = []) {
+  const cursor = {
+    sort: vi.fn().mockReturnThis(),
+    toArray: vi.fn().mockResolvedValue(docs),
+  }
   const collection = {
     insertOne: vi.fn().mockResolvedValue({ insertedId: 'abc' }),
-    find: vi.fn().mockReturnValue({ toArray: vi.fn().mockResolvedValue(docs) }),
+    find: vi.fn().mockReturnValue(cursor),
     deleteMany: vi.fn().mockResolvedValue({ deletedCount: docs.length }),
     createIndex: vi.fn().mockResolvedValue('ok'),
   }
-  return { collection: vi.fn().mockReturnValue(collection), _collection: collection }
+  return { collection: vi.fn().mockReturnValue(collection), _collection: collection, _cursor: cursor }
 }
 
 describe('MongoStorage', () => {
@@ -82,6 +86,13 @@ describe('MongoStorage', () => {
       sessionId: 'sess-1',
     })
     expect(entries[0]).not.toHaveProperty('userId')
+  })
+
+  it('getAll() sorts results by timestamp ascending', async () => {
+    const db = makeDb([])
+    const storage = new MongoStorage(db)
+    await storage.getAll()
+    expect(db._cursor.sort).toHaveBeenCalledWith({ timestamp: 1 })
   })
 
   it('clearAll() calls deleteMany with empty filter', async () => {

@@ -193,13 +193,13 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     const header = 'timestamp,model,inputTokens,outputTokens,costUSD,sessionId,userId'
     const rows = entries.map((e) =>
       [
-        e.timestamp,
-        e.model,
+        csvEscape(e.timestamp),
+        csvEscape(e.model),
         e.inputTokens,
         e.outputTokens,
         e.costUSD.toFixed(8),
-        e.sessionId ?? '',
-        e.userId ?? '',
+        csvEscape(e.sessionId ?? ''),
+        csvEscape(e.userId ?? ''),
       ].join(','),
     )
     return [header, ...rows].join('\n')
@@ -218,4 +218,12 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
 
 function computeTotal(entries: UsageEntry[]): number {
   return entries.reduce((sum, e) => sum + e.costUSD, 0)
+}
+
+/** Wrap a CSV field value in double-quotes if it contains commas, quotes, or newlines. */
+function csvEscape(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`
+  }
+  return value
 }

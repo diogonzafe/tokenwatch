@@ -36,9 +36,14 @@ interface MongoDocument {
   timestamp: string
 }
 
+interface MongoCursor {
+  sort(sort: Record<string, unknown>): MongoCursor
+  toArray(): Promise<MongoDocument[]>
+}
+
 interface Collection {
   insertOne(doc: MongoDocument): Promise<unknown>
-  find(filter: Record<string, unknown>): { toArray(): Promise<MongoDocument[]> }
+  find(filter: Record<string, unknown>): MongoCursor
   deleteMany(filter: Record<string, unknown>): Promise<unknown>
   createIndex(index: Record<string, unknown>): Promise<unknown>
 }
@@ -81,7 +86,7 @@ export class MongoStorage implements IStorage {
   }
 
   async getAll(): Promise<UsageEntry[]> {
-    const docs = await this.col.find({}).toArray()
+    const docs = await this.col.find({}).sort({ timestamp: 1 }).toArray()
     return docs.map(docToEntry)
   }
 

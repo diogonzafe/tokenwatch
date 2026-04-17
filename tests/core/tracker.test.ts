@@ -83,6 +83,23 @@ describe('createTracker', () => {
     expect(lines).toHaveLength(3) // header + 2 rows
   })
 
+  it('exportCSV() escapes commas in sessionId and userId', async () => {
+    const tracker = makeTracker()
+    tracker.track({ model: 'gpt-4o', inputTokens: 100, outputTokens: 50, sessionId: 'a,b', userId: 'u,v' })
+    const csv = await tracker.exportCSV()
+    const dataLine = csv.split('\n')[1] ?? ''
+    expect(dataLine).toContain('"a,b"')
+    expect(dataLine).toContain('"u,v"')
+  })
+
+  it('exportCSV() escapes double-quotes in field values', async () => {
+    const tracker = makeTracker()
+    tracker.track({ model: 'gpt-4o', inputTokens: 100, outputTokens: 50, sessionId: 'say "hi"' })
+    const csv = await tracker.exportCSV()
+    const dataLine = csv.split('\n')[1] ?? ''
+    expect(dataLine).toContain('"say ""hi"""')
+  })
+
   it('customPrices overrides bundled prices', async () => {
     const tracker = makeTracker({
       customPrices: { 'gpt-4o': { input: 100, output: 100 } },

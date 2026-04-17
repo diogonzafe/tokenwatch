@@ -1,11 +1,15 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
+import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { fetchRemotePrices } from '../src/core/sync.js'
+import { SqliteStorage } from '../src/core/storage.js'
+import { createTracker } from '../src/core/tracker.js'
 import type { PricesFile } from '../src/types/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const DB_PATH = join(homedir(), '.tokenwatch', 'usage.db')
 
 const COMMANDS = ['sync', 'prices', 'report', 'help']
 
@@ -46,6 +50,59 @@ function cmdPrices(): void {
   }
 }
 
+async function cmdReport(): Promise<void> {
+  if (!existsSync(DB_PATH)) {
+    console.log(`No SQLite database found at ${DB_PATH}`)
+    console.log('Start your app with storage: \'sqlite\' to begin recording usage.')
+    return
+  }
+
+  let storage: SqliteStorage
+  try {
+    storage = new SqliteStorage(DB_PATH)
+  } catch {
+    console.error('Failed to open SQLite database. Is better-sqlite3 installed?')
+    console.error('Run: npm install better-sqlite3')
+    process.exit(1)
+  }
+
+  const tracker = createTracker({ storage, syncPrices: false })
+  const report = await tracker.getReport()
+
+  if (report.totalCostUSD === 0 && Object.keys(report.byModel).length === 0) {
+    console.log('No usage recorded yet.')
+    return
+  }
+
+  console.log('\n── tokenwatch report ──────────────────────────────')
+  console.log(`  Total cost:   $${report.totalCostUSD.toFixed(6)} USD`)
+  console.log(`  Total tokens: ${report.totalTokens.input.toLocaleString()} in / ${report.totalTokens.output.toLocaleString()} out`)
+  console.log(`  Period:       ${report.period.from}  →  ${report.period.to}`)
+
+  if (Object.keys(report.byModel).length > 0) {
+    console.log('\n  By model:')
+    for (const [model, stats] of Object.entries(report.byModel)) {
+      console.log(`    ${model.padEnd(30)} $${stats.costUSD.toFixed(6)}  (${stats.calls} calls)`)
+    }
+  }
+
+  if (Object.keys(report.byUser).length > 0) {
+    console.log('\n  By user:')
+    for (const [user, stats] of Object.entries(report.byUser)) {
+      console.log(`    ${user.padEnd(30)} $${stats.costUSD.toFixed(6)}  (${stats.calls} calls)`)
+    }
+  }
+
+  if (Object.keys(report.bySession).length > 0) {
+    console.log('\n  By session:')
+    for (const [session, stats] of Object.entries(report.bySession)) {
+      console.log(`    ${session.padEnd(30)} $${stats.costUSD.toFixed(6)}  (${stats.calls} calls)`)
+    }
+  }
+
+  console.log('───────────────────────────────────────────────────\n')
+}
+
 function cmdHelp(): void {
   console.log(`
 tokenwatch — CLI
@@ -70,7 +127,7 @@ async function main(): Promise<void> {
       cmdPrices()
       break
     case 'report':
-      console.log('report command requires SQLite storage to be configured in your app.')
+      await cmdReport()
       break
     case 'help':
     case undefined:
