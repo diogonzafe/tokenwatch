@@ -11,8 +11,6 @@ import type { PricesFile } from '../src/types/index.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DB_PATH = join(homedir(), '.tokenwatch', 'usage.db')
 
-const COMMANDS = ['sync', 'prices', 'report', 'help']
-
 function loadBundledPrices(): PricesFile['models'] {
   const pricesPath = join(__dirname, '..', 'prices.json')
   const raw = readFileSync(pricesPath, 'utf8')

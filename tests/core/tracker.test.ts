@@ -179,13 +179,50 @@ describe('getModelInfo', () => {
   })
 })
 
-describe('createTracker — zod config validation', () => {
-  it('throws on invalid storage value', () => {
+describe('createTracker — custom IStorage instance', () => {
+  it('uses a custom IStorage instance when passed as storage', async () => {
+    const records: import('../../src/types/index.js').UsageEntry[] = []
+    const customStorage = {
+      record: (entry: import('../../src/types/index.js').UsageEntry) => { records.push(entry) },
+      getAll: () => records,
+      clearAll: () => { records.length = 0 },
+      clearSession: (id: string) => { records.splice(0, records.length, ...records.filter(e => e.sessionId !== id)) },
+    }
+
+    const tracker = createTracker({ syncPrices: false, storage: customStorage })
+    tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500 })
+
+    expect(records).toHaveLength(1)
+    const report = await tracker.getReport()
+    expect(report.totalTokens.input).toBe(1000)
+    expect(report.totalTokens.output).toBe(500)
+  })
+
+  it('reset() clears custom storage', async () => {
+    const records: import('../../src/types/index.js').UsageEntry[] = []
+    const customStorage = {
+      record: (entry: import('../../src/types/index.js').UsageEntry) => { records.push(entry) },
+      getAll: () => records,
+      clearAll: () => { records.length = 0 },
+      clearSession: (id: string) => { records.splice(0, records.length, ...records.filter(e => e.sessionId !== id)) },
+    }
+
+    const tracker = createTracker({ syncPrices: false, storage: customStorage })
+    tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500 })
+    await tracker.reset()
+
+    expect(records).toHaveLength(0)
+    expect((await tracker.getReport()).totalCostUSD).toBe(0)
+  })
+
+  it('throws on invalid storage string', () => {
     expect(() =>
       createTracker({ syncPrices: false, storage: 'redis' as 'memory' }),
     ).toThrow('[tokenwatch] Invalid config')
   })
+})
 
+describe('createTracker — zod config validation', () => {
   it('throws on negative alertThreshold', () => {
     expect(() =>
       createTracker({ syncPrices: false, alertThreshold: -1 }),

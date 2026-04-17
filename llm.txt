@@ -25,8 +25,8 @@ Config fields (all optional):
 - getReport() → Promise<Report>
 - reset() → Promise<void>
 - resetSession(sessionId: string) → Promise<void>
-- exportJSON() → Promise<string>
-- exportCSV() → Promise<string>
+- exportJSON() → Promise<string>                      — full report as JSON string
+- exportCSV() → Promise<string>                       — all raw UsageEntry rows as RFC 4180 CSV (fields with commas/quotes are escaped)
 
 ### Report shape
 {
@@ -129,7 +129,7 @@ src/
     mongodb.ts            — MongoStorage (mongodb)
     index.ts              — barrel export
   index.ts                — public exports
-bin/cli.ts                — CLI: sync | prices | report | help
+bin/cli.ts                — CLI: sync | prices | report (reads ~/.tokenwatch/usage.db) | help
 prices.json               — bundled pricing data (200+ models, updated daily)
 scripts/scrape-prices.mjs — fetches LiteLLM JSON, run by GitHub Action
 .github/workflows/sync-prices.yml — daily price sync + npm publish
@@ -137,7 +137,8 @@ scripts/scrape-prices.mjs — fetches LiteLLM JSON, run by GitHub Action
 ## CLI
 tokenwatch sync     — fetch and cache remote prices
 tokenwatch prices   — list bundled models and prices
-tokenwatch report   — show last saved report (SQLite)
+tokenwatch report   — read ~/.tokenwatch/usage.db and print cost breakdown (total, by model, by user, by session)
+                      shows "No SQLite database found" if db doesn't exist, "No usage recorded yet" if empty
 tokenwatch help     — help
 
 ## Config validation

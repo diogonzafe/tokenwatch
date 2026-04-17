@@ -38,7 +38,7 @@ const tracker = createTracker({
   webhookUrl: 'https://...',   // Discord / Slack webhook
   syncPrices: true,            // fetch fresh prices from GitHub (default: true)
   customPrices: {
-    'my-model': { input: 0.50, output: 1.50 }  // USD per 1M tokens
+    'my-model': { input: 0.50, output: 1.50, maxInputTokens: 32000 }  // USD per 1M tokens
   }
 })
 ```
@@ -163,7 +163,7 @@ tracker.getModelInfo('gpt-4o')
 await tracker.reset()                     // clear all data
 await tracker.resetSession('session_abc') // clear one session
 await tracker.exportJSON()                // full report as JSON string
-await tracker.exportCSV()                 // all calls as CSV string
+await tracker.exportCSV()                 // all raw calls as CSV (RFC 4180 — fields with commas/quotes are escaped)
 ```
 
 ---
@@ -315,9 +315,28 @@ Webhook payload:
 ```bash
 npx tokenwatch sync     # force update cached prices from remote
 npx tokenwatch prices   # list all models and current prices
-npx tokenwatch report   # show last saved report (SQLite)
+npx tokenwatch report   # show usage report from ~/.tokenwatch/usage.db
 npx tokenwatch help     # show help
 ```
+
+`tokenwatch report` reads the local SQLite database and prints:
+
+```
+── tokenwatch report ──────────────────────────────
+  Total cost:   $0.004231 USD
+  Total tokens: 12,400 in / 3,100 out
+  Period:       2026-04-16T09:00:00.000Z  →  2026-04-16T11:30:00.000Z
+
+  By model:
+    gpt-4o                         $0.003100  (8 calls)
+    claude-sonnet-4-6              $0.001131  (3 calls)
+
+  By user:
+    user_123                       $0.004231  (11 calls)
+───────────────────────────────────────────────────
+```
+
+Requires `storage: 'sqlite'` in your app and `better-sqlite3` installed.
 
 ---
 
