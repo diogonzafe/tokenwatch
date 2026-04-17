@@ -1,28 +1,35 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { fetchRemotePrices, loadCachedPrices, getRemotePrices } from '../../src/core/sync.js'
-import { writeFile, mkdir, rm } from 'node:fs/promises'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 
-// We test with a temp directory to avoid touching the real cache
-const TEST_DIR = join(tmpdir(), 'tokenwatch-test-sync')
-const TEST_CACHE = join(TEST_DIR, 'prices.json')
+// vi.mock is hoisted above variable declarations, so mocks must be created
+// with vi.hoisted() to be available inside the factory.
+const { mockExistsSync, mockReadFile } = vi.hoisted(() => ({
+  mockExistsSync: vi.fn().mockReturnValue(false),
+  mockReadFile: vi.fn<() => Promise<string>>(),
+}))
+
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+  return { ...actual, existsSync: mockExistsSync }
+})
+
+vi.mock('node:fs/promises', async () => {
+  const actual = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
+  return { ...actual, readFile: mockReadFile }
+})
 
 const MOCK_PRICES = {
-  updated_at: '2026-04-16',
+  updated_at: '2026-04-17',
   source: 'https://example.com',
   models: {
     'gpt-4o': { input: 2.5, output: 10 },
   },
 }
 
-beforeEach(async () => {
-  await mkdir(TEST_DIR, { recursive: true })
-})
-
-afterEach(async () => {
+afterEach(() => {
   vi.restoreAllMocks()
-  await rm(TEST_DIR, { recursive: true, force: true })
+  mockExistsSync.mockReturnValue(false)
+  mockReadFile.mockReset()
 })
 
 describe('fetchRemotePrices', () => {
@@ -60,58 +67,72 @@ describe('fetchRemotePrices', () => {
 
 describe('loadCachedPrices', () => {
   it('returns null when cache file does not exist', async () => {
-    // Point to non-existent path via module internals — we test indirectly
-    // by ensuring the real function doesn't throw
+    mockExistsSync.mockReturnValue(false)
     const result = await loadCachedPrices()
-    // May return null or valid data depending on real cache — just shouldn't throw
-    expect(result === null || typeof result === 'object').toBe(true)
+    expect(result).toBeNull()
+  })
+
+  it('returns models when cache file is fresh', async () => {
+    mockExistsSync.mockReturnValue(true)
+    const payload = { ...MOCK_PRICES, _cachedAt: Date.now() }
+    mockReadFile.mockResolvedValue(JSON.stringify(payload))
+
+    const result = await loadCachedPrices()
+    expect(result).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+  })
+
+  it('returns null when cache file is stale (> 24h)', async () => {
+    mockExistsSync.mockReturnValue(true)
+    const oldCachedAt = Date.now() - 25 * 60 * 60 * 1000
+    const payload = { ...MOCK_PRICES, _cachedAt: oldCachedAt }
+    mockReadFile.mockResolvedValue(JSON.stringify(payload))
+
+    const result = await loadCachedPrices()
+    expect(result).toBeNull()
+  })
+
+  it('returns null when cache file is malformed JSON', async () => {
+    mockExistsSync.mockReturnValue(true)
+    mockReadFile.mockResolvedValue('not valid json {{{')
+
+    const result = await loadCachedPrices()
+    expect(result).toBeNull()
   })
 })
 
 describe('getRemotePrices', () => {
-  it('returns cached prices without fetching when cache is fresh', async () => {
-    // Write a fresh cache file
-    const freshCache = {
-      ...MOCK_PRICES,
-      _cachedAt: Date.now(),
-    }
-    await writeFile(TEST_CACHE, JSON.stringify(freshCache), 'utf8')
-
-    // loadCachedPrices reads from the real cache path, so we mock fetch to
-    // confirm it is NOT called when a fresh cache is available
+  it('returns cached data without calling fetch when cache is a hit', async () => {
+    mockExistsSync.mockReturnValue(true)
+    const payload = { ...MOCK_PRICES, _cachedAt: Date.now() }
+    mockReadFile.mockResolvedValue(JSON.stringify(payload))
     const mockFetch = vi.fn()
     global.fetch = mockFetch
 
-    // getRemotePrices uses the real cache path — if the real cache is fresh it
-    // returns without fetching; if stale it falls through to fetch. We can only
-    // assert the no-throw contract here without rewriting module internals.
     const result = await getRemotePrices()
-    expect(result === null || typeof result === 'object').toBe(true)
+
+    expect(result).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('falls back to fetch when cache is stale', async () => {
-    // Write a stale cache (> 24h old)
-    const staleCache = {
-      ...MOCK_PRICES,
-      _cachedAt: Date.now() - 25 * 60 * 60 * 1000,
-    }
-    await writeFile(TEST_CACHE, JSON.stringify(staleCache), 'utf8')
-
+  it('calls fetch and returns its result when cache is a miss', async () => {
+    mockExistsSync.mockReturnValue(false)
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(MOCK_PRICES),
     } as unknown as Response)
 
-    // Even if real cache is fresh, fetch returns a valid result
     const result = await getRemotePrices()
-    expect(result === null || typeof result === 'object').toBe(true)
+
+    expect(global.fetch).toHaveBeenCalled()
+    expect(result).toMatchObject({ 'gpt-4o': { input: 2.5 } })
   })
 
-  it('returns null when both cache and remote fail', async () => {
+  it('returns null when cache misses and fetch fails', async () => {
+    mockExistsSync.mockReturnValue(false)
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
-    // Without a fresh real cache, getRemotePrices tries fetch which fails
+
     const result = await getRemotePrices()
-    // Either returns cached data (if real cache is fresh) or null
-    expect(result === null || typeof result === 'object').toBe(true)
+
+    expect(result).toBeNull()
   })
 })

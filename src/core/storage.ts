@@ -94,7 +94,7 @@ export class SqliteStorage implements IStorage {
   }
 
   getAll(): UsageEntry[] {
-    const rows = this.db.prepare('SELECT * FROM usage').all() as Array<{
+    const rows = this.db.prepare('SELECT * FROM usage ORDER BY timestamp ASC').all() as Array<{
       model: string
       input_tokens: number
       output_tokens: number

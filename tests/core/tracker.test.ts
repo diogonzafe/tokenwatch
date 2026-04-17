@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createTracker } from '../../src/core/tracker.js'
 import type { Tracker } from '../../src/types/index.js'
 
