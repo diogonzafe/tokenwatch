@@ -47,7 +47,7 @@ interface ModelStats {
 
 ---
 
-#### 2. Cached token support (prompt caching)
+#### 2. ~~Cached token support (prompt caching)~~ ✅ Implemented in v0.3.0
 OpenAI and Anthropic offer discounts for cached prompt tokens. These are priced differently (OpenAI: 50% off, Anthropic: 90% off). Currently tokenwatch records them at full price, overstating actual cost.
 
 **OpenAI:** `usage.prompt_tokens_details.cached_tokens`
@@ -68,7 +68,7 @@ OpenAI and Anthropic offer discounts for cached prompt tokens. These are priced 
 
 ---
 
-#### 3. Per-user and per-session budget alerts
+#### 3. ~~Per-user and per-session budget alerts~~ ✅ Implemented in v0.3.0
 Today `alertThreshold` is global. Add the ability to set spending limits per individual user or session — essential for SaaS products where you want to cap each customer's spend independently.
 
 **API sketch:**
@@ -85,7 +85,7 @@ const tracker = createTracker({
 
 ---
 
-#### 4. `tracker.getCostForecast()`
+#### 4. ~~`tracker.getCostForecast()`~~ ✅ Implemented in v0.3.0
 Based on the burn rate of the last N hours, project the cost to end of day and end of month. Simple to implement with existing data, extremely useful for SaaS cost management.
 
 **API sketch:**
@@ -179,7 +179,7 @@ const result = await streamText({ model, messages, onFinish: ({ usage }) => {
 
 ---
 
-#### 16. Lazy / singleton initialization pattern for module-level imports
+#### 16. ~~Lazy / singleton initialization pattern for module-level imports~~ ✅ Implemented in v0.4.0
 
 When users call `getTracker()` at module load time (a common Node.js singleton pattern), it fails in Jest and other test environments where modules are imported before `createTracker()` has been called. The library gives no guidance on this.
 
@@ -226,7 +226,7 @@ const tracker = createTracker({
 
 ---
 
-#### 7. Cheaper model suggestions
+#### 7. ~~Cheaper model suggestions~~ ✅ Implemented in v0.4.0
 After each call, compare the cost with the cheapest equivalent model available in `prices.json` and log a hint. Opt-in via config.
 
 **API sketch:**
@@ -241,7 +241,7 @@ const tracker = createTracker({ suggestions: true })
 
 ---
 
-#### 8. LangChain callback handler
+#### 8. ~~LangChain callback handler~~ ✅ Implemented in v0.4.0
 A `TokenwatchCallbackHandler` compatible with LangChain's callback system, so LangChain users get automatic cost tracking without changing any of their chain/agent code.
 
 **API sketch:**
@@ -259,7 +259,7 @@ const chain = new LLMChain({
 
 ---
 
-#### 9. Time-filtered reports
+#### 9. ~~Time-filtered reports~~ ✅ Implemented in v0.3.0
 Allow filtering `getReport()` by time period. With SQLite and accumulated history this becomes essential.
 
 **API sketch:**
@@ -346,21 +346,21 @@ npx tokenwatch dashboard --port 8080
 | # | Feature | Effort | Impact | Unique? | Status |
 |---|---|---|---|---|---|
 | 1 | Reasoning token tracking | Low | High | Yes | ✅ v0.2.0 |
-| 2 | Cached token pricing | Medium | High | Yes | |
-| 3 | Per-user/session budgets | Medium | High | Yes | |
-| 4 | Cost forecast | Low | High | Yes | |
+| 2 | Cached token pricing | Medium | High | Yes | ✅ v0.3.0 |
+| 3 | Per-user/session budgets | Medium | High | Yes | ✅ v0.3.0 |
+| 4 | Cost forecast | Low | High | Yes | ✅ v0.3.0 |
 | 5 | Feature tagging (`__feature`) | Low | High | Yes | ✅ v0.2.0 |
 | 6 | OpenTelemetry exporter | Medium | Medium | No | |
-| 7 | Cheaper model suggestions | Low | Medium | No | |
-| 8 | LangChain callback handler | Medium | High | No | |
-| 9 | Time-filtered reports | Low | Medium | No | |
+| 7 | Cheaper model suggestions | Low | Medium | No | ✅ v0.4.0 |
+| 8 | LangChain callback handler | Medium | High | No | ✅ v0.4.0 |
+| 9 | Time-filtered reports | Low | Medium | No | ✅ v0.3.0 |
 | 10 | Semantic caching | High | High | No | |
 | 11 | Anomaly detection | High | Medium | No | |
 | 12 | Cost allocation rules | High | Low | No | |
 | 13 | Local web dashboard | High | High | Partial | |
 | 14 | Embeddings support in `wrapOpenAI` | Low | High | No | ✅ v0.2.0 |
 | 15 | Agent framework integration guide | Low | High | No | ✅ v0.2.1 |
-| 16 | Lazy / singleton init pattern | Low | Medium | No | |
+| 16 | Lazy / singleton init pattern | Low | Medium | No | ✅ v0.4.0 |
 
 ---
 
@@ -370,7 +370,7 @@ npx tokenwatch dashboard --port 8080
 
 ---
 
-### G1. Fix misleading "zero overhead / zero latency" documentation claim
+### G1. ~~Fix misleading "zero overhead / zero latency" documentation claim~~ ✅ Fixed in v0.3.0
 
 The current README/docs claim zero overhead, but every call goes through a `Proxy` trap, async wrapper, and optional SQLite write. This is negligible in practice but not literally zero.
 
@@ -380,7 +380,7 @@ The current README/docs claim zero overhead, but every call goes through a `Prox
 
 ---
 
-### G2. Price sync reliability — staleness warnings and multi-source validation
+### G2. ~~Price sync reliability — staleness warnings and multi-source validation~~ ✅ Implemented in v0.3.0
 
 LiteLLM JSON is community-maintained and can lag actual provider billing by hours or days. For serious cost attribution, undetected price drift leads to silent billing discrepancies.
 
@@ -448,8 +448,8 @@ The documentation currently focuses on quick-start usage but gives no guidance o
 
 | # | Gap | Effort | Impact | Priority | Status |
 |---|---|---|---|---|---|
-| G1 | Fix "zero latency" docs claim | Low | Medium | Immediate | |
-| G2 | Price staleness warnings | Low | High | High | |
+| G1 | Fix "zero latency" docs claim | Low | Medium | Immediate | ✅ v0.3.0 |
+| G2 | Price staleness warnings | Low | High | High | ✅ v0.3.0 |
 | G3 | Postgres / pluggable storage | High | High | Medium | ✅ v0.2.0 |
 | G4 | Privacy & security README section | Low | High | Immediate | ✅ done |
 | G5 | Production readiness docs | Low | Medium | High | |

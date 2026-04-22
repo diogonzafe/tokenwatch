@@ -8,6 +8,7 @@ const sharedExternal = [
   'pg',
   'mysql2',
   'mongodb',
+  '@langchain/core',
 ]
 
 export default defineConfig([
@@ -16,6 +17,7 @@ export default defineConfig([
     entry: {
       index: 'src/index.ts',
       adapters: 'src/adapters/index.ts',
+      langchain: 'src/langchain/index.ts',
     },
     format: ['esm', 'cjs'],
     dts: true,

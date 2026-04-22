@@ -17,26 +17,74 @@ Config fields (all optional):
 - alertThreshold: number                    — USD, fires webhook once when exceeded
 - webhookUrl: string                        — Discord/Slack webhook URL
 - syncPrices: boolean                       — fetch remote prices on startup (default true)
-- customPrices: Record<string, { input: number, output: number, maxInputTokens?: number }>
+- warnIfStaleAfterHours: number             — warn if prices are older than N hours (0 = disable, default 72)
+- customPrices: Record<string, { input: number, output: number, cachedInput?: number, cacheCreationInput?: number, maxInputTokens?: number }>
+- budgets: {
+    perUser?: BudgetConfig,       — alert when a single user's total spend crosses threshold
+    perSession?: BudgetConfig,    — alert when a single session's total spend crosses threshold
+  }
+- suggestions: boolean            — log a hint after each call if a cheaper model in the same family has >50% savings (default false)
+
+### BudgetConfig
+{ threshold: number, webhookUrl: string, mode?: 'once' | 'always' }
+- mode 'once' (default): fires once per user/session; mode 'always': fires on every call that exceeds
+
+### createLazyTracker() → LazyTracker
+Returns a tracker that no-ops silently until init() is called. Safe for module-level singletons.
+LazyTracker extends Tracker — structurally compatible everywhere a Tracker is expected.
+
+LazyTracker extra method:
+- init(config?: TrackerConfig): void — initializes with createTracker(config). Throws if called twice. Failed init() leaves tracker in no-op mode.
+
+Before init() is called:
+- track() → silent no-op
+- getReport() → zero Report (totalCostUSD: 0, byModel: {}, etc.)
+- getCostForecast() → zero CostForecast (burnRatePerHour: 0, basedOnPeriod: null)
+- exportJSON() → '{}'
+- exportCSV() → CSV header row only
+- getModelInfo() → null
+- reset() / resetSession() → Promise.resolve()
 
 ### Tracker methods
 - track(entry)                              — called by providers, not by user (synchronous)
 - getModelInfo(model: string) → ModelPrice | null  — prices + maxInputTokens, null if unknown (synchronous)
-- getReport() → Promise<Report>
+- getReport(options?: ReportOptions) → Promise<Report>
+- getCostForecast(options?: ForecastOptions) → Promise<CostForecast>
 - reset() → Promise<void>
 - resetSession(sessionId: string) → Promise<void>
 - exportJSON() → Promise<string>                      — full report as JSON string
-- exportCSV() → Promise<string>                       — all raw UsageEntry rows as RFC 4180 CSV; columns: timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,sessionId,userId,feature
+- exportCSV() → Promise<string>                       — all raw UsageEntry rows as RFC 4180 CSV
+  columns: timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature
+
+### ReportOptions
+{ since?: string, until?: string, last?: string }
+- since/until: ISO 8601 date or datetime string
+- last: shorthand string — '1h', '24h', '7d', '30d'
+- last takes precedence over since when both are provided
+- throws "Invalid \"last\" value" if last string is not recognised
+
+### ForecastOptions
+{ windowHours?: number }  — default 24; window for burn rate calculation
 
 ### Report shape
 {
   totalCostUSD: number,
   totalTokens: { input: number, output: number },
-  byModel: Record<string, { costUSD, calls, tokens: { input, output, reasoning } }>,
+  byModel: Record<string, { costUSD, calls, tokens: { input, output, reasoning, cached } }>,
   bySession: Record<string, { costUSD, calls }>,
   byUser: Record<string, { costUSD, calls }>,
   byFeature: Record<string, { costUSD, calls }>,
-  period: { from: string, to: string }
+  period: { from: string, to: string },
+  pricesUpdatedAt?: string   — date of the price data in use (e.g. "2026-04-22"), absent if prices not loaded
+}
+
+### CostForecast shape
+{
+  burnRatePerHour: number,             — USD per hour based on windowHours
+  projectedDailyCostUSD: number,       — burnRatePerHour * 24
+  projectedMonthlyCostUSD: number,     — burnRatePerHour * 24 * 30
+  basedOnHours: number,                — actual span of entries used (0 if < 2 entries in window)
+  basedOnPeriod: { from: string, to: string } | null   — null if basedOnHours is 0
 }
 
 ### Provider wrappers
@@ -50,15 +98,32 @@ All wrappers:
 - Strip those fields before forwarding to the real API
 - wrapOpenAI covers: chat.completions.create (streaming + non-streaming) and embeddings.create
 - wrapOpenAI reasoning tokens: reads completion_tokens_details.reasoning_tokens; priced as output tokens (separate from completion_tokens in o1/o3/o4)
+- wrapOpenAI cached tokens: reads prompt_tokens_details.cached_tokens; priced at cachedInput rate (default 50% of input)
 - wrapAnthropic reasoning tokens: approximate (thinking block chars ÷ 4); informational only — thinking is already included in outputTokens, not added to cost
+- wrapAnthropic cached tokens: reads cache_read_input_tokens (priced at cachedInput rate) and cache_creation_input_tokens (priced at cacheCreationInput rate, default 125% of input)
 - wrapGemini: __sessionId, __userId, __feature are passed on getGenerativeModel() params (not per generateContent call) — all calls from that model instance share the same meta
 - Return the exact same type as the input client (generics preserve types)
 - Track cost after a successful call; do nothing if the API throws
 - Support streaming
 - record() is fire-and-forget — a storage failure never interrupts the API call
 
+## Prompt Caching Token Accounting
+
+OpenAI caching: cached_tokens is a SUBSET of prompt_tokens.
+- inputTokens stored = prompt_tokens - cached_tokens  (regular, non-cached)
+- cachedTokens stored = cached_tokens
+- totalTokens.input = inputTokens + cachedTokens (= prompt_tokens)
+- Cost = regularInput * price.input + cached * price.cachedInput
+
+Anthropic caching: input_tokens, cache_read_input_tokens, cache_creation_input_tokens are SEPARATE.
+- inputTokens = input_tokens (regular)
+- cachedTokens = cache_read_input_tokens
+- cacheCreationTokens = cache_creation_input_tokens
+- totalTokens.input = inputTokens + cachedTokens + cacheCreationTokens
+- Cost = input * price.input + cached * price.cachedInput + creation * price.cacheCreationInput
+
 ## UsageEntry fields
-model, inputTokens, outputTokens, reasoningTokens? (OpenAI: separate from outputTokens, priced as output; Anthropic: approximate, informational only), costUSD, sessionId?, userId?, feature?, timestamp
+model, inputTokens, outputTokens, reasoningTokens?, cachedTokens?, cacheCreationTokens?, costUSD, sessionId?, userId?, feature?, timestamp
 
 ## IStorage interface
 All methods are sync-or-async (return T or Promise<T>):
@@ -74,21 +139,21 @@ Built-in implementations: MemoryStorage (default), SqliteStorage (requires bette
 ### PostgresStorage
 - Peer dep: pg >= 8
 - Constructor: new PostgresStorage(pool: pg.Pool | pg.Client)
-- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times (IF NOT EXISTS + incremental ALTER TABLE ADD COLUMN IF NOT EXISTS for databases created before v0.2.0)
-- Schema: id BIGSERIAL, model TEXT, input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cost_usd NUMERIC, session_id TEXT, user_id TEXT, feature TEXT, timestamp TIMESTAMPTZ
+- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times (IF NOT EXISTS + incremental ALTER TABLE ADD COLUMN IF NOT EXISTS for databases created before v0.2.0/v0.3.0)
+- Schema: id BIGSERIAL, model TEXT, input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cached_tokens INT NOT NULL DEFAULT 0, cache_creation_tokens INT NOT NULL DEFAULT 0, cost_usd NUMERIC, session_id TEXT, user_id TEXT, feature TEXT, timestamp TIMESTAMPTZ
 
 ### MySQLStorage
 - Peer dep: mysql2 >= 3
 - Constructor: new MySQLStorage(pool: mysql2.Pool | mysql2.Connection)
-- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times (IF NOT EXISTS + incremental ALTER TABLE ADD COLUMN IF NOT EXISTS for databases created before v0.2.0)
-- Schema: id BIGINT UNSIGNED AUTO_INCREMENT, model VARCHAR(255), input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cost_usd DECIMAL(18,8), session_id VARCHAR(255), user_id VARCHAR(255), feature VARCHAR(255), timestamp DATETIME(3)
+- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times
+- Schema: id BIGINT UNSIGNED AUTO_INCREMENT, model VARCHAR(255), input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cached_tokens INT NOT NULL DEFAULT 0, cache_creation_tokens INT NOT NULL DEFAULT 0, cost_usd DECIMAL(18,8), session_id VARCHAR(255), user_id VARCHAR(255), feature VARCHAR(255), timestamp DATETIME(3)
 
 ### MongoStorage
 - Peer dep: mongodb >= 6
 - Constructor: new MongoStorage(db: Db)
 - Extra method: createIndexes() → Promise<void>  — creates indexes on timestamp, sessionId, userId, model
 - Collection name: tokenwatch_usage
-- Document fields: model, inputTokens, outputTokens, reasoningTokens? (omitted if 0), costUSD, sessionId (null if absent), userId (null if absent), feature? (omitted if absent), timestamp
+- Document fields: model, inputTokens, outputTokens, reasoningTokens? (omitted if 0), cachedTokens? (omitted if 0), cacheCreationTokens? (omitted if 0), costUSD, sessionId (null if absent), userId (null if absent), feature? (omitted if absent), timestamp
 
 Custom adapter: any object implementing IStorage works as storage value.
 
@@ -99,21 +164,26 @@ Custom adapter: any object implementing IStorage works as storage value.
 Unknown model → cost = $0 + console.warn
 
 Prices are in USD per 1 million tokens.
-Cost formula: (inputTokens / 1_000_000) * price.input + (outputTokens / 1_000_000) * price.output
+Cost formula (with caching):
+  regularInputCost = (inputTokens / 1_000_000) * price.input
+  cachedReadCost   = (cachedTokens / 1_000_000) * (price.cachedInput ?? price.input)
+  cacheCreateCost  = (cacheCreationTokens / 1_000_000) * (price.cacheCreationInput ?? price.input * 1.25)
+  outputCost       = (outputTokens / 1_000_000) * price.output
+  total = regularInputCost + cachedReadCost + cacheCreateCost + outputCost
 
 Model alias matching: exact match first, then prefix match (e.g. "gpt-4o-2024-11-20" matches key "gpt-4o").
 
 ## Bundled models (prices.json)
 200+ models across OpenAI, Anthropic, Gemini, DeepSeek — auto-updated daily.
-Each model entry: { input: number, output: number, maxInputTokens?: number }
+Each model entry: { input: number, output: number, cachedInput?: number, cacheCreationInput?: number, maxInputTokens?: number }
 Source: https://github.com/BerriAI/litellm (model_prices_and_context_window.json)
 
 Example entries:
-gpt-4o:            { input: 2.50,  output: 10.00, maxInputTokens: 128000 }
-gpt-4o-mini:       { input: 0.15,  output: 0.60,  maxInputTokens: 128000 }
-claude-opus-4-6:   { input: 5.00,  output: 25.00, maxInputTokens: 1000000 }
-claude-sonnet-4-6: { input: 3.00,  output: 15.00, maxInputTokens: 1000000 }
-claude-haiku-4-5:  { input: 1.00,  output: 5.00,  maxInputTokens: 1000000 }
+gpt-4o:            { input: 2.50,  output: 10.00, cachedInput: 1.25,  maxInputTokens: 128000 }
+gpt-4o-mini:       { input: 0.15,  output: 0.60,  cachedInput: 0.075, maxInputTokens: 128000 }
+claude-opus-4-6:   { input: 15.00, output: 75.00, cachedInput: 1.50,  cacheCreationInput: 18.75, maxInputTokens: 1000000 }
+claude-sonnet-4-6: { input: 3.00,  output: 15.00, cachedInput: 0.30,  cacheCreationInput: 3.75,  maxInputTokens: 1000000 }
+claude-haiku-4-5:  { input: 1.00,  output: 5.00,  cachedInput: 0.10,  cacheCreationInput: 1.25,  maxInputTokens: 1000000 }
 gemini-2.5-pro:    { input: 1.25,  output: 10.00, maxInputTokens: 1048576 }
 gemini-2.5-flash:  { input: 0.30,  output: 2.50,  maxInputTokens: 1048576 }
 deepseek-chat:     { input: 0.28,  output: 0.42,  maxInputTokens: 131072 }
@@ -121,10 +191,10 @@ deepseek-reasoner: { input: 0.28,  output: 0.42,  maxInputTokens: 131072 }
 
 ## File structure
 src/
-  types/index.ts          — all exported types (IStorage, Tracker, TrackerConfig, UsageEntry, Report, etc.)
+  types/index.ts          — all exported types (IStorage, Tracker, TrackerConfig, UsageEntry, Report, ReportOptions, CostForecast, ForecastOptions, BudgetConfig, etc.)
   core/
-    pricing.ts            — resolvePrice(model, layers), calculateCost(inputTokens, outputTokens, price)
-    sync.ts               — getRemotePrices(), fetchRemotePrices(url?), loadCachedPrices()
+    pricing.ts            — resolvePrice(model, layers), calculateCost(inputTokens, outputTokens, price, cachedTokens?, cacheCreationTokens?)
+    sync.ts               — getRemotePrices(), fetchRemotePrices(url?), loadCachedPrices() → PricesResult | null; PricesResult = { models: PriceMap, updated_at: string }
     storage.ts            — MemoryStorage, SqliteStorage, createStorage(type)
     tracker.ts            — createTracker(config) — main entrypoint
   providers/
@@ -163,7 +233,7 @@ Falls back gracefully with clear error if better-sqlite3 not installed.
 ## Streaming
 OpenAI: wraps AsyncIterable, captures usage from the last chunk (requires stream_options: { include_usage: true })
   If stream has no usage data: records $0 + console.warn mentioning include_usage
-Anthropic: captures input_tokens from message_start event, output_tokens from message_delta event
+Anthropic: captures input_tokens from message_start event, output_tokens from message_delta event; cache fields from message_start
 Gemini generateContentStream: usage read from the response Promise after stream completes
 
 ## Agent Framework Integration
@@ -185,10 +255,25 @@ LlamaIndex TypeScript (Settings.callbackManager.on('llm-end', handler)):
   event.detail.response.raw.usage.completion_tokens → outputTokens
   raw.model available for model name
 
-LangChain.js (BaseCallbackHandler.handleLLMEnd(output)):
-  output.llmOutput?.tokenUsage.promptTokens → inputTokens
-  output.llmOutput?.estimatedTokenUsage for streaming (approximate)
-  model name not available in callback; set manually at handler init
+LangChain.js — use built-in TokenwatchCallbackHandler (recommended):
+  import { TokenwatchCallbackHandler } from '@diogonzafe/tokenwatch/langchain'
+  new TokenwatchCallbackHandler(tracker, { defaultModel?, sessionId?, userId?, feature? })
+  Handles tokenUsage (non-streaming) and estimatedTokenUsage (streaming) automatically.
+  Extracts model from output.generations[0][0].message.response_metadata.model_name, falls back to defaultModel ?? 'unknown'.
+  Peer dep: @langchain/core >= 0.1.0 (optional, not required at compile time).
+
+  Manual alternative (BaseCallbackHandler.handleLLMEnd(output)):
+    output.llmOutput?.tokenUsage.promptTokens → inputTokens
+    output.llmOutput?.estimatedTokenUsage for streaming (approximate)
+    model name not available in callback; set manually at handler init
+
+## Model Suggestions
+When suggestions: true in TrackerConfig, after each track() call:
+- Detects provider family by model name prefix: gpt-, claude-, gemini-, deepseek-
+- Compares cost against all models from the same family in the current price layers
+- If cheapest alternative costs < 50% of current call: logs a console.log hint
+- Merges layers: bundledPrices < remotePrices < customPrices (customPrices wins)
+- No suggestion when: model unknown (costUSD=0), no cheaper alternative, savings ≤ 50%
 
 ## Privacy & Security
 - Prompt and response content is never read or stored — only token counts and model names

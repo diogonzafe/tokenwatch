@@ -34,14 +34,41 @@ import { createTracker } from '@diogonzafe/tokenwatch'
 const tracker = createTracker({
   // All fields are optional
   storage: 'memory',           // 'memory' (default) | 'sqlite' | IStorage instance
-  alertThreshold: 1.00,        // USD — fires webhookUrl when exceeded
+  alertThreshold: 1.00,        // USD — fires webhookUrl when total cost exceeded
   webhookUrl: 'https://...',   // Discord / Slack webhook
   syncPrices: true,            // fetch fresh prices from GitHub (default: true)
+  warnIfStaleAfterHours: 72,   // warn if prices are older than N hours (0 = disable)
   customPrices: {
     'my-model': { input: 0.50, output: 1.50, maxInputTokens: 32000 }  // USD per 1M tokens
-  }
+  },
+  budgets: {
+    perUser:    { threshold: 1.00, webhookUrl: 'https://...' },  // per-user alert
+    perSession: { threshold: 0.10, webhookUrl: 'https://...' },  // per-session alert
+  },
+  suggestions: true,            // log hints for cheaper models in same family (>50% savings)
 })
 ```
+
+---
+
+## Lazy Initialization
+
+For module-level singletons where the tracker needs to be imported before `createTracker()` can run (e.g. shared modules, Jest test environments):
+
+```ts
+import { createLazyTracker } from '@diogonzafe/tokenwatch'
+
+// Safe to import anywhere — all methods are no-ops until init() is called
+export const tracker = createLazyTracker()
+
+// At app startup (e.g. index.ts / server.ts):
+tracker.init({ storage: 'sqlite', syncPrices: true })
+
+// In tests — never call init(), track() silently no-ops:
+tracker.track({ model: 'gpt-4o', inputTokens: 100, outputTokens: 50 }) // does nothing
+```
+
+`init()` may only be called once — a second call throws. A failed `init()` (e.g. invalid config) leaves the tracker in no-op mode. `LazyTracker` satisfies the `Tracker` interface, so it can be used anywhere a `Tracker` is expected.
 
 ---
 
@@ -240,34 +267,27 @@ Settings.callbackManager.on('llm-end', (event) => {
 
 ### LangChain.js
 
-Extend `BaseCallbackHandler` and attach it to the model or per-call:
+Use the built-in `TokenwatchCallbackHandler` from the `/langchain` sub-path:
 
 ```ts
-import { BaseCallbackHandler } from '@langchain/core/callbacks/base'
-import { LLMResult } from '@langchain/core/outputs'
 import { ChatOpenAI } from '@langchain/openai'
 import { createTracker } from '@diogonzafe/tokenwatch'
+import { TokenwatchCallbackHandler } from '@diogonzafe/tokenwatch/langchain'
 
 const tracker = createTracker({ storage: 'sqlite' })
+const handler = new TokenwatchCallbackHandler(tracker, {
+  defaultModel: 'gpt-4o',    // fallback when the response doesn't include the model name
+  sessionId: 'sess_abc',     // optional — tag all calls from this handler
+  userId: 'user_123',
+  feature: 'chat',
+})
 
-class TokenWatchHandler extends BaseCallbackHandler {
-  name = 'tokenwatch'
-
-  async handleLLMEnd(output: LLMResult) {
-    // tokenUsage for non-streaming, estimatedTokenUsage for streaming
-    const usage = output.llmOutput?.['tokenUsage'] ?? output.llmOutput?.['estimatedTokenUsage']
-    if (usage) {
-      tracker.track({
-        model: 'gpt-4o',
-        inputTokens: usage.promptTokens,
-        outputTokens: usage.completionTokens,
-      })
-    }
-  }
-}
-
-const llm = new ChatOpenAI({ model: 'gpt-4o', callbacks: [new TokenWatchHandler()] })
+const llm = new ChatOpenAI({ model: 'gpt-4o', callbacks: [handler] })
 ```
+
+The handler extracts `promptTokens` / `completionTokens` from `llmOutput.tokenUsage` (non-streaming) and falls back to `estimatedTokenUsage` for streaming calls. No `@langchain/core` compile-time dependency is required in tokenwatch itself — it is an optional peer dependency.
+
+> **Note:** This requires `@langchain/core >= 0.1.0` to be installed in your project.
 
 ---
 
@@ -281,24 +301,36 @@ const report = await tracker.getReport()
 //   totalCostUSD: 0.087,
 //   totalTokens: { input: 24000, output: 6000 },
 //   byModel: {
-//     'gpt-4o':          { costUSD: 0.062, calls: 5, tokens: { input: 20000, output: 5000, reasoning: 0 } },
-//     'o3':              { costUSD: 0.041, calls: 1, tokens: { input: 1000,  output: 200,  reasoning: 800 } },
-//     'claude-sonnet-4-6': { costUSD: 0.025, calls: 2, tokens: { input: 4000, output: 1000, reasoning: 0 } }
+//     'gpt-4o': { costUSD: 0.062, calls: 5, tokens: { input: 20000, output: 5000, reasoning: 0, cached: 4000 } },
+//     'o3':     { costUSD: 0.041, calls: 1, tokens: { input: 1000,  output: 200,  reasoning: 800, cached: 0 } },
 //   },
 //   bySession: { 'session_abc': { costUSD: 0.045, calls: 4 } },
 //   byUser:    { 'user_123':    { costUSD: 0.087, calls: 7 } },
 //   byFeature: { 'chat': { costUSD: 0.062, calls: 5 }, 'rag': { costUSD: 0.025, calls: 3 } },
-//   period: { from: '2026-04-16T10:00:00Z', to: '2026-04-16T11:00:00Z' }
+//   period: { from: '2026-04-16T10:00:00Z', to: '2026-04-16T11:00:00Z' },
+//   pricesUpdatedAt: '2026-04-22'   // date of the price data in use
 // }
 
+// Time-filtered reports
+await tracker.getReport({ last: '24h' })          // last 24 hours
+await tracker.getReport({ last: '7d' })           // last 7 days
+await tracker.getReport({ since: '2026-04-01' })  // since a specific date
+await tracker.getReport({ since: '2026-04-01', until: '2026-04-30' })
+
+// Cost forecast — burn rate + projected daily/monthly spend
+const forecast = await tracker.getCostForecast()
+// { burnRatePerHour: 0.043, projectedDailyCostUSD: 1.03, projectedMonthlyCostUSD: 31.20, basedOnHours: 6 }
+
+await tracker.getCostForecast({ windowHours: 1 })  // use last 1h for burn rate calculation
+
 tracker.getModelInfo('gpt-4o')
-// { input: 2.5, output: 10, maxInputTokens: 128000 }
+// { input: 2.5, output: 10, cachedInput: 1.25, maxInputTokens: 128000 }
 // Returns null if the model is unknown (synchronous)
 
 await tracker.reset()                     // clear all data
 await tracker.resetSession('session_abc') // clear one session
 await tracker.exportJSON()                // full report as JSON string
-await tracker.exportCSV()                 // all raw calls as CSV (RFC 4180 — fields with commas/quotes are escaped)
+await tracker.exportCSV()                 // all raw calls as CSV (RFC 4180)
 ```
 
 ---
@@ -323,10 +355,10 @@ Prices are in **USD per 1 million tokens**.
 
 ```json
 {
-  "gpt-4o":            { "input": 2.50,  "output": 10.00, "maxInputTokens": 128000 },
-  "claude-sonnet-4-6": { "input": 3.00,  "output": 15.00, "maxInputTokens": 1000000 },
-  "gemini-2.5-pro":    { "input": 1.25,  "output": 10.00, "maxInputTokens": 1048576 },
-  "deepseek-chat":     { "input": 0.28,  "output": 0.42,  "maxInputTokens": 131072 }
+  "gpt-4o":            { "input": 2.50, "output": 10.00, "cachedInput": 1.25,  "maxInputTokens": 128000 },
+  "claude-sonnet-4-6": { "input": 3.00, "output": 15.00, "cachedInput": 0.30,  "cacheCreationInput": 3.75, "maxInputTokens": 1000000 },
+  "gemini-2.5-pro":    { "input": 1.25, "output": 10.00,                        "maxInputTokens": 1048576 },
+  "deepseek-chat":     { "input": 0.28, "output": 0.42,                         "maxInputTokens": 131072 }
 }
 ```
 
@@ -428,7 +460,44 @@ const tracker = createTracker({ storage: new RedisStorage() })
 
 ---
 
+## Prompt Caching
+
+OpenAI and Anthropic offer discounted pricing for cached prompt tokens. tokenwatch tracks these automatically — no changes needed at the call site.
+
+**OpenAI** — cached reads billed at 50% of input price:
+```ts
+// prompt_tokens_details.cached_tokens is extracted automatically
+const res = await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [{ role: 'user', content: '...' }],
+})
+// report.byModel['gpt-4o'].tokens.cached shows how many tokens were served from cache
+```
+
+**Anthropic** — cache reads at 10% of input price, cache creation at 125%:
+```ts
+const res = await anthropic.messages.create({
+  model: 'claude-sonnet-4-6',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: '...' }],
+  // cache_read_input_tokens and cache_creation_input_tokens extracted from usage automatically
+})
+```
+
+Cached token prices are included in `prices.json` for all models that support caching. You can also override them:
+```ts
+const tracker = createTracker({
+  customPrices: {
+    'my-model': { input: 2.50, output: 10.00, cachedInput: 1.25, cacheCreationInput: 3.13 }
+  }
+})
+```
+
+---
+
 ## Alerts & Webhooks
+
+### Global threshold
 
 ```ts
 const tracker = createTracker({
@@ -441,6 +510,36 @@ const tracker = createTracker({
 Webhook payload:
 ```json
 { "text": "[tokenwatch] Alert: total cost reached $5.0012 USD (threshold: $5)" }
+```
+
+### Per-user and per-session budgets
+
+```ts
+const tracker = createTracker({
+  budgets: {
+    perUser: {
+      threshold: 1.00,
+      webhookUrl: 'https://hooks.slack.com/...',
+      mode: 'once',   // default — fires once per user; use 'always' to fire on every call that exceeds
+    },
+    perSession: {
+      threshold: 0.10,
+      webhookUrl: 'https://hooks.slack.com/...',
+    },
+  },
+})
+
+await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [...],
+  __userId: 'user_123',       // required for perUser alert to fire
+  __sessionId: 'sess_abc',    // required for perSession alert to fire
+})
+```
+
+Budget webhook payload:
+```json
+{ "text": "[tokenwatch] Budget alert: user \"user_123\" reached $1.0031 USD (threshold: $1)" }
 ```
 
 ---
@@ -517,7 +616,7 @@ type MyParams = { model: string; messages: Message[] } & TrackingMeta
 
 - `__sessionId`, `__userId`, and `__feature` are **stripped before** the request reaches the API
 - The response object returned is **identical** to the original SDK response
-- `track()` is **synchronous and non-blocking** — zero latency added to API calls
+- `track()` is **synchronous and non-blocking** — negligible sub-millisecond overhead; no proxy server or network hop
 - If the API call **fails**, no cost is recorded and the original error is re-thrown unchanged
 - Streaming is fully supported — usage is accumulated from the final stream event
 - Database writes from `record()` are **fire-and-forget** — a storage failure never interrupts your API call
