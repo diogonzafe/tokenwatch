@@ -23,7 +23,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
       - name: Install dependencies
@@ -41,29 +40,14 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Bump version, commit, push and publish
+      - name: Commit updated prices.json
         if: steps.diff.outputs.changed == 'true'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           DATE=$(date +%Y-%m-%d)
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Stage prices.json first, bump patch (also stages package*.json)
           git add prices.json
-          npm version patch --no-git-tag-version
-          git add package.json package-lock.json
-
           git commit -m "chore: sync prices $DATE"
-
-          # Tag the new version
-          VERSION=$(node -p "require('./package.json').version")
-          git tag "v$VERSION"
-
-          git push origin HEAD --follow-tags
-
-          # Build and publish to npm
-          npm run build
-          npm publish --access public
+          git push origin HEAD
