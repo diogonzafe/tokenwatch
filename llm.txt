@@ -132,7 +132,7 @@ src/
 bin/cli.ts                — CLI: sync | prices | report (reads ~/.tokenwatch/usage.db) | help
 prices.json               — bundled pricing data (200+ models, updated daily)
 scripts/scrape-prices.mjs — fetches LiteLLM JSON, run by GitHub Action
-.github/workflows/sync-prices.yml — daily price sync + npm publish
+.github/workflows/sync-prices.yml — daily price sync (commits prices.json; npm publish is manual, code changes only)
 
 ## CLI
 tokenwatch sync     — fetch and cache remote prices

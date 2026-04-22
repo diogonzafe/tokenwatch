@@ -195,7 +195,7 @@ Prices are in **USD per 1 million tokens**.
 }
 ```
 
-Prices are updated every day via a GitHub Action that pulls from the [LiteLLM community model registry](https://github.com/BerriAI/litellm). New models are auto-discovered — no manual updates needed.
+Prices are updated every day via a GitHub Action that pulls from the [LiteLLM community model registry](https://github.com/BerriAI/litellm) and commits the updated `prices.json` to the repo. Users with `syncPrices: true` (the default) always receive fresh prices at runtime — no `npm update` needed.
 
 ---
 
