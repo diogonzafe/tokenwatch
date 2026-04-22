@@ -153,7 +153,7 @@ await wrappedOpenAI.embeddings.create({ model: 'text-embedding-3-small', input: 
 
 ---
 
-#### 15. Agent framework integration guide (Mastra, Vercel AI SDK, LlamaIndex)
+#### 15. ~~Agent framework integration guide (Mastra, Vercel AI SDK, LlamaIndex)~~ ✅ Implemented in v0.2.1
 
 `wrapOpenAI` works when you hold the raw OpenAI client. Frameworks like Mastra and LlamaIndex use the Vercel AI SDK or their own HTTP layer internally — the client is never exposed, so wrapping it isn't possible. The README's "no changes required" claim is misleading for this group.
 
@@ -359,7 +359,7 @@ npx tokenwatch dashboard --port 8080
 | 12 | Cost allocation rules | High | Low | No | |
 | 13 | Local web dashboard | High | High | Partial | |
 | 14 | Embeddings support in `wrapOpenAI` | Low | High | No | ✅ v0.2.0 |
-| 15 | Agent framework integration guide | Low | High | No | |
+| 15 | Agent framework integration guide | Low | High | No | ✅ v0.2.1 |
 | 16 | Lazy / singleton init pattern | Low | Medium | No | |
 
 ---

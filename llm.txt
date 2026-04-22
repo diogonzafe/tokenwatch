@@ -166,6 +166,30 @@ OpenAI: wraps AsyncIterable, captures usage from the last chunk (requires stream
 Anthropic: captures input_tokens from message_start event, output_tokens from message_delta event
 Gemini generateContentStream: usage read from the response Promise after stream completes
 
+## Agent Framework Integration
+
+wrapOpenAI / wrapAnthropic do NOT work with agent frameworks — they never expose the raw SDK client. Use tracker.track() manually via each framework's usage callback.
+
+tracker.track() always expects inputTokens and outputTokens. Field name mapping by framework:
+
+Mastra (agent.generate onStepFinish):
+  usage.promptTokens → inputTokens, usage.completionTokens → outputTokens
+  model string format: "openai/gpt-4o" — extract model id manually
+
+Vercel AI SDK v5 (streamText / generateText onFinish):
+  usage.inputTokens → inputTokens, usage.outputTokens → outputTokens
+  For multi-step agents use totalUsage (not usage) in onFinish for aggregate
+
+LlamaIndex TypeScript (Settings.callbackManager.on('llm-end', handler)):
+  event.detail.response.raw.usage.prompt_tokens → inputTokens (snake_case)
+  event.detail.response.raw.usage.completion_tokens → outputTokens
+  raw.model available for model name
+
+LangChain.js (BaseCallbackHandler.handleLLMEnd(output)):
+  output.llmOutput?.tokenUsage.promptTokens → inputTokens
+  output.llmOutput?.estimatedTokenUsage for streaming (approximate)
+  model name not available in callback; set manually at handler init
+
 ## Privacy & Security
 - Prompt and response content is never read or stored — only token counts and model names
 - API keys are never accessed by tokenwatch

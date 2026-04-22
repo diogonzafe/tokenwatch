@@ -159,6 +159,118 @@ const res = await deepseek.chat.completions.create({
 
 ---
 
+## Agent Frameworks
+
+Frameworks like **Mastra**, **Vercel AI SDK**, **LlamaIndex**, and **LangChain** use their own internal LLM abstractions — they never expose the raw OpenAI/Anthropic client. `wrapOpenAI` and `wrapAnthropic` do not apply. Use `tracker.track()` manually via each framework's usage callback instead.
+
+> `tracker.track()` always expects `inputTokens` and `outputTokens`. The field names exposed by each framework differ — see the mappings below.
+
+### Mastra
+
+`agent.generate()` and `agent.stream()` expose usage in `onStepFinish`:
+
+```ts
+import { Agent } from '@mastra/core/agent'
+import { createTracker } from '@diogonzafe/tokenwatch'
+
+const tracker = createTracker({ storage: 'sqlite' })
+
+const agent = new Agent({ model: 'openai/gpt-4o', instructions: '...' })
+
+const result = await agent.generate('Hello', {
+  onStepFinish: ({ usage }) => {
+    tracker.track({
+      model: 'gpt-4o',
+      inputTokens: usage.promptTokens,      // Mastra uses promptTokens
+      outputTokens: usage.completionTokens, // Mastra uses completionTokens
+      sessionId: 'sess-abc',
+    })
+  },
+})
+```
+
+### Vercel AI SDK
+
+`streamText` / `generateText` expose usage in `onFinish`. As of `ai` v5, the fields are `inputTokens` / `outputTokens`:
+
+```ts
+import { createOpenAI } from '@ai-sdk/openai'
+import { streamText } from 'ai'
+import { createTracker } from '@diogonzafe/tokenwatch'
+
+const tracker = createTracker({ storage: 'sqlite' })
+const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY! })
+
+await streamText({
+  model: openai('gpt-4o'),
+  prompt: 'Hello',
+  onFinish: ({ usage }) => {
+    tracker.track({
+      model: 'gpt-4o',
+      inputTokens: usage.inputTokens ?? 0,
+      outputTokens: usage.outputTokens ?? 0,
+    })
+  },
+})
+```
+
+For multi-step agents, use `totalUsage` instead of `usage` in `onFinish` to get the aggregate across all steps.
+
+### LlamaIndex TypeScript
+
+Use `Settings.callbackManager` to intercept `llm-end` events. The raw OpenAI response is available as `response.raw` with snake_case field names:
+
+```ts
+import { Settings } from 'llamaindex'
+import { createTracker } from '@diogonzafe/tokenwatch'
+
+const tracker = createTracker({ storage: 'sqlite' })
+
+Settings.callbackManager.on('llm-end', (event) => {
+  const raw = event.detail.response.raw as { model?: string; usage?: { prompt_tokens: number; completion_tokens: number } }
+  if (raw?.usage) {
+    tracker.track({
+      model: raw.model ?? 'unknown',
+      inputTokens: raw.usage.prompt_tokens,      // LlamaIndex exposes snake_case
+      outputTokens: raw.usage.completion_tokens,
+    })
+  }
+})
+```
+
+### LangChain.js
+
+Extend `BaseCallbackHandler` and attach it to the model or per-call:
+
+```ts
+import { BaseCallbackHandler } from '@langchain/core/callbacks/base'
+import { LLMResult } from '@langchain/core/outputs'
+import { ChatOpenAI } from '@langchain/openai'
+import { createTracker } from '@diogonzafe/tokenwatch'
+
+const tracker = createTracker({ storage: 'sqlite' })
+
+class TokenWatchHandler extends BaseCallbackHandler {
+  name = 'tokenwatch'
+
+  async handleLLMEnd(output: LLMResult) {
+    // tokenUsage for non-streaming, estimatedTokenUsage for streaming
+    const usage = output.llmOutput?.['tokenUsage'] ?? output.llmOutput?.['estimatedTokenUsage']
+    if (usage) {
+      tracker.track({
+        model: 'gpt-4o',
+        inputTokens: usage.promptTokens,
+        outputTokens: usage.completionTokens,
+      })
+    }
+  }
+}
+
+const llm = new ChatOpenAI({ model: 'gpt-4o', callbacks: [new TokenWatchHandler()] })
+```
+
+---
+
 ## Reports
 
 All report methods are async:
