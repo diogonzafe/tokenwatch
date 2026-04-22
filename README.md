@@ -59,6 +59,7 @@ const res = await openai.chat.completions.create({
   // Optional — removed before sending to the API
   __sessionId: 'session_abc',
   __userId: 'user_123',
+  __feature: 'chat',       // tag calls by product feature → report.byFeature
 })
 // res is identical to the original OpenAI response — zero difference
 ```
@@ -79,6 +80,20 @@ for await (const chunk of stream) {
 // Cost tracked automatically from the final chunk
 ```
 
+Embeddings are also tracked automatically:
+
+```ts
+const embedding = await openai.embeddings.create({
+  model: 'text-embedding-3-small',
+  input: 'The food was delicious',
+  __sessionId: 'session_abc',
+  __feature: 'rag',   // optional
+})
+// inputTokens = usage.total_tokens, outputTokens = 0
+```
+
+> **Note:** `wrapOpenAI` covers `chat.completions` and `embeddings`. Other endpoints (e.g. fine-tuning, images) are not intercepted — use `tracker.track()` manually if needed.
+
 ---
 
 ## Anthropic
@@ -95,6 +110,7 @@ const res = await anthropic.messages.create({
   messages: [{ role: 'user', content: 'Hello' }],
   __sessionId: 'session_abc',
   __userId: 'user_123',
+  __feature: 'summarizer',
 })
 ```
 
@@ -148,11 +164,13 @@ const report = await tracker.getReport()
 //   totalCostUSD: 0.087,
 //   totalTokens: { input: 24000, output: 6000 },
 //   byModel: {
-//     'gpt-4o': { costUSD: 0.062, calls: 5, tokens: { input: 20000, output: 5000 } },
-//     'claude-sonnet-4-6': { costUSD: 0.025, calls: 2, tokens: { input: 4000, output: 1000 } }
+//     'gpt-4o':          { costUSD: 0.062, calls: 5, tokens: { input: 20000, output: 5000, reasoning: 0 } },
+//     'o3':              { costUSD: 0.041, calls: 1, tokens: { input: 1000,  output: 200,  reasoning: 800 } },
+//     'claude-sonnet-4-6': { costUSD: 0.025, calls: 2, tokens: { input: 4000, output: 1000, reasoning: 0 } }
 //   },
 //   bySession: { 'session_abc': { costUSD: 0.045, calls: 4 } },
 //   byUser:    { 'user_123':    { costUSD: 0.087, calls: 7 } },
+//   byFeature: { 'chat': { costUSD: 0.062, calls: 5 }, 'rag': { costUSD: 0.025, calls: 3 } },
 //   period: { from: '2026-04-16T10:00:00Z', to: '2026-04-16T11:00:00Z' }
 // }
 
@@ -351,7 +369,7 @@ Requires `storage: 'sqlite'` in your app and `better-sqlite3` installed.
 
 ## Behaviour Guarantees
 
-- `__sessionId` and `__userId` are **stripped before** the request reaches the API
+- `__sessionId`, `__userId`, and `__feature` are **stripped before** the request reaches the API
 - The response object returned is **identical** to the original SDK response
 - `track()` is **synchronous and non-blocking** — zero latency added to API calls
 - If the API call **fails**, no cost is recorded and the original error is re-thrown unchanged

@@ -38,9 +38,15 @@ export interface UsageEntry {
   model: string
   inputTokens: number
   outputTokens: number
+  /** Reasoning/thinking tokens (OpenAI o1/o3/o4). Priced as output tokens.
+   *  For Anthropic, this is an approximation (thinking block chars ÷ 4) and is
+   *  informational only — thinking output is already included in outputTokens. */
+  reasoningTokens?: number
   costUSD: number
   sessionId?: string
   userId?: string
+  /** Product feature that triggered this call (set via __feature in provider params) */
+  feature?: string
   timestamp: string
 }
 
@@ -49,7 +55,7 @@ export interface UsageEntry {
 export interface ModelStats {
   costUSD: number
   calls: number
-  tokens: { input: number; output: number }
+  tokens: { input: number; output: number; reasoning: number }
 }
 
 export interface SessionStats {
@@ -62,12 +68,18 @@ export interface UserStats {
   calls: number
 }
 
+export interface FeatureStats {
+  costUSD: number
+  calls: number
+}
+
 export interface Report {
   totalCostUSD: number
   totalTokens: { input: number; output: number }
   byModel: Record<string, ModelStats>
   bySession: Record<string, SessionStats>
   byUser: Record<string, UserStats>
+  byFeature: Record<string, FeatureStats>
   period: { from: string; to: string }
 }
 
@@ -100,4 +112,6 @@ export interface Tracker {
 export interface TrackingMeta {
   __sessionId?: string
   __userId?: string
+  /** Tag this call with a product feature name — appears in report.byFeature */
+  __feature?: string
 }

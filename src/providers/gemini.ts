@@ -1,4 +1,4 @@
-import type { Tracker } from '../types/index.js'
+import type { Tracker, TrackingMeta } from '../types/index.js'
 
 // ─── Minimal structural types ─────────────────────────────────────────────────
 
@@ -33,6 +33,9 @@ interface GenAILike {
  * Wraps a GoogleGenerativeAI client to transparently intercept
  * generateContent / generateContentStream calls and report token usage.
  *
+ * Pass __feature in getGenerativeModel params to tag all calls from that model
+ * instance with a product feature name (appears in report.byFeature).
+ *
  * Returns the same type T that was passed in.
  */
 export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T {
@@ -42,7 +45,13 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
         return (target as Record<string | symbol, unknown>)[prop]
 
       return function (modelParams: { model: string } & Record<string, unknown>) {
-        const modelInstance = target.getGenerativeModel(modelParams)
+        // Extract tracking meta from getGenerativeModel params
+        const { __sessionId, __userId, __feature, ...cleanedParams } = modelParams as typeof modelParams & TrackingMeta
+        const feature = typeof __feature === 'string' ? __feature : undefined
+        const sessionId = typeof __sessionId === 'string' ? __sessionId : undefined
+        const userId = typeof __userId === 'string' ? __userId : undefined
+
+        const modelInstance = target.getGenerativeModel(cleanedParams as { model: string } & Record<string, unknown>)
         const modelId = modelParams.model
 
         return new Proxy(modelInstance, {
@@ -55,6 +64,9 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
                   model: modelId,
                   inputTokens: meta?.promptTokenCount ?? 0,
                   outputTokens: meta?.candidatesTokenCount ?? 0,
+                  ...(sessionId !== undefined && { sessionId }),
+                  ...(userId !== undefined && { userId }),
+                  ...(feature !== undefined && { feature }),
                 })
 
                 return result
@@ -73,6 +85,9 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
                       model: modelId,
                       inputTokens: meta?.promptTokenCount ?? 0,
                       outputTokens: meta?.candidatesTokenCount ?? 0,
+                      ...(sessionId !== undefined && { sessionId }),
+                      ...(userId !== undefined && { userId }),
+                      ...(feature !== undefined && { feature }),
                     })
                   })
                   .catch(() => {

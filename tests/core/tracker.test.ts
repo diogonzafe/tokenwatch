@@ -79,7 +79,7 @@ describe('createTracker', () => {
     tracker.track({ model: 'gpt-4o-mini', inputTokens: 500, outputTokens: 200 })
     const csv = await tracker.exportCSV()
     const lines = csv.split('\n')
-    expect(lines[0]).toBe('timestamp,model,inputTokens,outputTokens,costUSD,sessionId,userId')
+    expect(lines[0]).toBe('timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,sessionId,userId,feature')
     expect(lines).toHaveLength(3) // header + 2 rows
   })
 
@@ -98,6 +98,16 @@ describe('createTracker', () => {
     const csv = await tracker.exportCSV()
     const dataLine = csv.split('\n')[1] ?? ''
     expect(dataLine).toContain('"say ""hi"""')
+  })
+
+  it('exportCSV() includes reasoningTokens column', async () => {
+    const tracker = makeTracker()
+    tracker.track({ model: 'gpt-4o', inputTokens: 100, outputTokens: 50, reasoningTokens: 200 })
+    const csv = await tracker.exportCSV()
+    const dataLine = csv.split('\n')[1] ?? ''
+    const cols = dataLine.split(',')
+    // header: timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,...
+    expect(cols[4]).toBe('200') // reasoningTokens column
   })
 
   it('customPrices overrides bundled prices', async () => {
@@ -242,6 +252,42 @@ describe('createTracker — zod config validation', () => {
         customPrices: { 'my-model': { input: -1, output: 0 } },
       }),
     ).toThrow('[tokenwatch] Invalid config')
+  })
+
+  it('accumulates byFeature correctly', async () => {
+    const tracker = makeTracker()
+    tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500, feature: 'search' })
+    tracker.track({ model: 'gpt-4o', inputTokens: 500, outputTokens: 200, feature: 'search' })
+    tracker.track({ model: 'gpt-4o', inputTokens: 200, outputTokens: 100, feature: 'chat' })
+    const report = await tracker.getReport()
+    expect(report.byFeature['search']?.calls).toBe(2)
+    expect(report.byFeature['chat']?.calls).toBe(1)
+  })
+
+  it('reset() clears byFeature', async () => {
+    const tracker = makeTracker()
+    tracker.track({ model: 'gpt-4o', inputTokens: 1000, outputTokens: 500, feature: 'search' })
+    await tracker.reset()
+    const report = await tracker.getReport()
+    expect(report.byFeature).toEqual({})
+  })
+
+  it('reasoningTokens are priced as output tokens in cost', async () => {
+    const tracker = createTracker({
+      syncPrices: false,
+      customPrices: { 'o3': { input: 0, output: 10 } },
+    })
+    tracker.track({ model: 'o3', inputTokens: 0, outputTokens: 0, reasoningTokens: 1_000_000 })
+    const report = await tracker.getReport()
+    expect(report.totalCostUSD).toBeCloseTo(10)
+  })
+
+  it('byModel.tokens.reasoning accumulates correctly', async () => {
+    const tracker = makeTracker()
+    tracker.track({ model: 'gpt-4o', inputTokens: 100, outputTokens: 50, reasoningTokens: 300 })
+    tracker.track({ model: 'gpt-4o', inputTokens: 100, outputTokens: 50, reasoningTokens: 700 })
+    const report = await tracker.getReport()
+    expect(report.byModel['gpt-4o']?.tokens.reasoning).toBe(1000)
   })
 
   it('accepts valid config without throwing', () => {

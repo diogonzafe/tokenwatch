@@ -7,6 +7,7 @@ import type {
   ModelStats,
   SessionStats,
   UserStats,
+  FeatureStats,
   ModelPrice,
   PriceMap,
   IStorage,
@@ -90,7 +91,15 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
 
   function track(entry: Omit<UsageEntry, 'costUSD' | 'timestamp'>): void {
     const price = resolveModelPrice(entry.model)
-    const costUSD = calculateCost(entry.inputTokens, entry.outputTokens, price)
+    // Reasoning tokens (OpenAI o1/o3/o4) are priced as output tokens and are
+    // separate from outputTokens in the API response — add them to the cost.
+    // For Anthropic, reasoningTokens is informational only (thinking is already
+    // included in outputTokens), so providers set reasoningTokens without affecting cost.
+    const costUSD = calculateCost(
+      entry.inputTokens,
+      entry.outputTokens + (entry.reasoningTokens ?? 0),
+      price,
+    )
     const full: UsageEntry = {
       ...entry,
       costUSD,
@@ -131,6 +140,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     const byModel: Record<string, ModelStats> = {}
     const bySession: Record<string, SessionStats> = {}
     const byUser: Record<string, UserStats> = {}
+    const byFeature: Record<string, FeatureStats> = {}
 
     let totalInput = 0
     let totalOutput = 0
@@ -144,11 +154,12 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       if (e.timestamp > lastTimestamp) lastTimestamp = e.timestamp
 
       // byModel
-      const m = (byModel[e.model] ??= { costUSD: 0, calls: 0, tokens: { input: 0, output: 0 } })
+      const m = (byModel[e.model] ??= { costUSD: 0, calls: 0, tokens: { input: 0, output: 0, reasoning: 0 } })
       m.costUSD += e.costUSD
       m.calls += 1
       m.tokens.input += e.inputTokens
       m.tokens.output += e.outputTokens
+      m.tokens.reasoning += e.reasoningTokens ?? 0
 
       // bySession
       if (e.sessionId) {
@@ -163,6 +174,13 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
         u.costUSD += e.costUSD
         u.calls += 1
       }
+
+      // byFeature
+      if (e.feature) {
+        const f = (byFeature[e.feature] ??= { costUSD: 0, calls: 0 })
+        f.costUSD += e.costUSD
+        f.calls += 1
+      }
     }
 
     return {
@@ -171,6 +189,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       byModel,
       bySession,
       byUser,
+      byFeature,
       period: { from: startedAt, to: lastTimestamp },
     }
   }
@@ -190,16 +209,18 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
 
   async function exportCSV(): Promise<string> {
     const entries = await Promise.resolve(storage.getAll())
-    const header = 'timestamp,model,inputTokens,outputTokens,costUSD,sessionId,userId'
+    const header = 'timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,sessionId,userId,feature'
     const rows = entries.map((e) =>
       [
         csvEscape(e.timestamp),
         csvEscape(e.model),
         e.inputTokens,
         e.outputTokens,
+        e.reasoningTokens ?? 0,
         e.costUSD.toFixed(8),
         csvEscape(e.sessionId ?? ''),
         csvEscape(e.userId ?? ''),
+        csvEscape(e.feature ?? ''),
       ].join(','),
     )
     return [header, ...rows].join('\n')

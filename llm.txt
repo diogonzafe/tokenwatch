@@ -26,15 +26,16 @@ Config fields (all optional):
 - reset() → Promise<void>
 - resetSession(sessionId: string) → Promise<void>
 - exportJSON() → Promise<string>                      — full report as JSON string
-- exportCSV() → Promise<string>                       — all raw UsageEntry rows as RFC 4180 CSV (fields with commas/quotes are escaped)
+- exportCSV() → Promise<string>                       — all raw UsageEntry rows as RFC 4180 CSV; columns: timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,sessionId,userId,feature
 
 ### Report shape
 {
   totalCostUSD: number,
   totalTokens: { input: number, output: number },
-  byModel: Record<string, { costUSD, calls, tokens: { input, output } }>,
+  byModel: Record<string, { costUSD, calls, tokens: { input, output, reasoning } }>,
   bySession: Record<string, { costUSD, calls }>,
   byUser: Record<string, { costUSD, calls }>,
+  byFeature: Record<string, { costUSD, calls }>,
   period: { from: string, to: string }
 }
 
@@ -45,12 +46,19 @@ Config fields (all optional):
 - wrapDeepSeek<T>(client: T, tracker): T  — alias for wrapOpenAI
 
 All wrappers:
-- Accept __sessionId and __userId as extra fields in the request params
+- Accept __sessionId, __userId, and __feature as extra fields in the request params
 - Strip those fields before forwarding to the real API
+- wrapOpenAI covers: chat.completions.create (streaming + non-streaming) and embeddings.create
+- wrapOpenAI reasoning tokens: reads completion_tokens_details.reasoning_tokens; priced as output tokens (separate from completion_tokens in o1/o3/o4)
+- wrapAnthropic reasoning tokens: approximate (thinking block chars ÷ 4); informational only — thinking is already included in outputTokens, not added to cost
+- wrapGemini: __feature is passed on getGenerativeModel() params, not per-call
 - Return the exact same type as the input client (generics preserve types)
 - Track cost after a successful call; do nothing if the API throws
 - Support streaming
 - record() is fire-and-forget — a storage failure never interrupts the API call
+
+## UsageEntry fields
+model, inputTokens, outputTokens, reasoningTokens? (OpenAI: separate from outputTokens, priced as output; Anthropic: approximate, informational only), costUSD, sessionId?, userId?, feature?, timestamp
 
 ## IStorage interface
 All methods are sync-or-async (return T or Promise<T>):
