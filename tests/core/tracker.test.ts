@@ -272,14 +272,18 @@ describe('createTracker — zod config validation', () => {
     expect(report.byFeature).toEqual({})
   })
 
-  it('reasoningTokens are priced as output tokens in cost', async () => {
+  it('reasoningTokens in UsageEntry is informational — cost comes from outputTokens only', async () => {
     const tracker = createTracker({
       syncPrices: false,
       customPrices: { 'o3': { input: 0, output: 10 } },
     })
-    tracker.track({ model: 'o3', inputTokens: 0, outputTokens: 0, reasoningTokens: 1_000_000 })
+    // Provider wrappers fold reasoning into outputTokens for cost; here we simulate that
+    tracker.track({ model: 'o3', inputTokens: 0, outputTokens: 1_000_000, reasoningTokens: 1_000_000 })
     const report = await tracker.getReport()
+    // Cost = outputTokens only (1M × $10/M = $10)
     expect(report.totalCostUSD).toBeCloseTo(10)
+    // reasoningTokens is still stored and visible in the report
+    expect(report.byModel['o3']?.tokens.reasoning).toBe(1_000_000)
   })
 
   it('byModel.tokens.reasoning accumulates correctly', async () => {

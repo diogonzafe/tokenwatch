@@ -201,7 +201,7 @@ describe('wrapOpenAI — reasoning tokens (#1)', () => {
     expect(report.byModel['o3']?.tokens.reasoning).toBe(400)
   })
 
-  it('adds reasoning tokens to cost (priced as output)', async () => {
+  it('adds reasoning tokens to cost by folding into outputTokens', async () => {
     const tracker = createTracker({
       syncPrices: false,
       customPrices: { 'o3': { input: 0, output: 10 } }, // $10/M output
@@ -209,7 +209,7 @@ describe('wrapOpenAI — reasoning tokens (#1)', () => {
     const client = makeOpenAIClient({
       usage: {
         prompt_tokens: 0,
-        completion_tokens: 0,
+        completion_tokens: 0,            // 0 visible output
         completion_tokens_details: { reasoning_tokens: 1_000_000 },
       },
     })
@@ -217,7 +217,11 @@ describe('wrapOpenAI — reasoning tokens (#1)', () => {
     await wrapped.chat.completions.create({ model: 'o3', messages: [] })
 
     const report = await tracker.getReport()
-    expect(report.totalCostUSD).toBeCloseTo(10) // 1M reasoning tokens × $10/M
+    // wrapper folds reasoning (1M) into outputTokens → cost = 1M × $10/M = $10
+    expect(report.totalCostUSD).toBeCloseTo(10, 6)
+    // report.byModel shows both the billing total and the reasoning breakdown
+    expect(report.byModel['o3']?.tokens.output).toBe(1_000_000) // completion + reasoning
+    expect(report.byModel['o3']?.tokens.reasoning).toBe(1_000_000)
   })
 
   it('records reasoning_tokens from last stream chunk', async () => {
@@ -252,6 +256,7 @@ describe('wrapOpenAI — reasoning tokens (#1)', () => {
 
 describe('wrapOpenAI — embeddings (#14)', () => {
   it('tracks embeddings.create using total_tokens as inputTokens', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const tracker = makeTracker()
     const client = makeOpenAIClient({ embeddingUsage: { prompt_tokens: 40, total_tokens: 40 } })
     const wrapped = wrapOpenAI(client, tracker)
@@ -261,9 +266,12 @@ describe('wrapOpenAI — embeddings (#14)', () => {
     const report = await tracker.getReport()
     expect(report.totalTokens.input).toBe(40)
     expect(report.totalTokens.output).toBe(0)
+    vi.restoreAllMocks()
+    warn.mockRestore()
   })
 
   it('strips __sessionId, __userId, __feature from embeddings params', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const tracker = makeTracker()
     const client = makeOpenAIClient()
     const wrapped = wrapOpenAI(client, tracker)
@@ -280,9 +288,11 @@ describe('wrapOpenAI — embeddings (#14)', () => {
     expect(callArgs).not.toHaveProperty('__sessionId')
     expect(callArgs).not.toHaveProperty('__userId')
     expect(callArgs).not.toHaveProperty('__feature')
+    warn.mockRestore()
   })
 
   it('records feature in byFeature for embeddings call', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const tracker = makeTracker()
     const client = makeOpenAIClient()
     const wrapped = wrapOpenAI(client, tracker)
@@ -296,6 +306,7 @@ describe('wrapOpenAI — embeddings (#14)', () => {
     const report = await tracker.getReport()
     expect(report.byFeature['rag']).toBeDefined()
     expect(report.byFeature['rag']?.calls).toBe(1)
+    warn.mockRestore()
   })
 
   it('works when client has no embeddings property', async () => {

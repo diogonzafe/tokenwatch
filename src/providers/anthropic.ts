@@ -105,18 +105,17 @@ function trackWithMeta(
   userId: string | undefined,
   feature: string | undefined,
 ): void {
+  // Anthropic thinking output is already included in outputTokens — no adjustment needed.
+  // reasoningTokens here is an approximation (thinking chars ÷ 4) stored purely for
+  // report.byModel[x].tokens.reasoning. The tracker does NOT add it to cost.
   tracker.track({
     model,
     inputTokens,
     outputTokens,
-    // For Anthropic, reasoningTokens is informational (thinking already in outputTokens).
-    // Pass 0 so tracker does not add it to cost (tracker only adds when > 0 AND separate).
-    // We store it as a field but the tracker cost formula adds reasoningTokens to outputTokens,
-    // so we must NOT pass it here to avoid double-counting.
+    ...(reasoningTokens > 0 && { reasoningTokens }),
     ...(sessionId !== undefined && { sessionId }),
     ...(userId !== undefined && { userId }),
     ...(feature !== undefined && { feature }),
-    ...(reasoningTokens > 0 && { reasoningTokens }),
   })
 }
 

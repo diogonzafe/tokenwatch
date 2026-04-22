@@ -154,8 +154,11 @@ describe('wrapAnthropic — reasoning tokens (#1)', () => {
     await wrapped.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 16000, messages: [] })
 
     const report = await tracker.getReport()
-    // Cost should be based on outputTokens (40) only — NOT outputTokens + reasoningTokens
-    expect(report.totalCostUSD).toBeCloseTo((40 / 1_000_000) * 10)
+    // Cost = outputTokens (40) only — thinking is already inside outputTokens
+    // Mock: output_tokens=40, thinking_chars=400 → reasoningTokens≈100
+    // If double-counted: cost = (40+100)/1M * 10 = 0.0014 — wrong
+    // Correct cost:      (40/1M) * 10 = 0.0004
+    expect(report.totalCostUSD).toBeCloseTo((40 / 1_000_000) * 10, 6)
   })
 
   it('records reasoning tokens from thinking blocks in stream', async () => {

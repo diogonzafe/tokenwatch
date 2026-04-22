@@ -107,10 +107,13 @@ function trackWithMeta(
   userId: string | undefined,
   feature: string | undefined,
 ): void {
+  // OpenAI bills reasoning_tokens at output price, separately from completion_tokens.
+  // We fold them into outputTokens so the cost is correct, and also store them in
+  // reasoningTokens so report.byModel[x].tokens.reasoning shows the breakdown.
   tracker.track({
     model,
     inputTokens,
-    outputTokens,
+    outputTokens: outputTokens + reasoningTokens,
     ...(reasoningTokens > 0 && { reasoningTokens }),
     ...(sessionId !== undefined && { sessionId }),
     ...(userId !== undefined && { userId }),

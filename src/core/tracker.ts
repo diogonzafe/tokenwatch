@@ -91,15 +91,11 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
 
   function track(entry: Omit<UsageEntry, 'costUSD' | 'timestamp'>): void {
     const price = resolveModelPrice(entry.model)
-    // Reasoning tokens (OpenAI o1/o3/o4) are priced as output tokens and are
-    // separate from outputTokens in the API response — add them to the cost.
-    // For Anthropic, reasoningTokens is informational only (thinking is already
-    // included in outputTokens), so providers set reasoningTokens without affecting cost.
-    const costUSD = calculateCost(
-      entry.inputTokens,
-      entry.outputTokens + (entry.reasoningTokens ?? 0),
-      price,
-    )
+    // Cost is always based on inputTokens + outputTokens only.
+    // Provider wrappers are responsible for including any billing-relevant tokens
+    // (e.g. OpenAI reasoning_tokens) in outputTokens before calling track().
+    // reasoningTokens on UsageEntry is purely informational for the report.
+    const costUSD = calculateCost(entry.inputTokens, entry.outputTokens, price)
     const full: UsageEntry = {
       ...entry,
       costUSD,
