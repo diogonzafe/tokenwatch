@@ -30,26 +30,28 @@ describe('MySQLStorage', () => {
   it('record() inserts a row with correct values', () => {
     const client = makeClient()
     const storage = new MySQLStorage(client)
-    const entry = makeEntry({ sessionId: 'sess-1', userId: 'user-1' })
+    const entry = makeEntry({ sessionId: 'sess-1', userId: 'user-1', reasoningTokens: 100, feature: 'chat' })
     storage.record(entry)
     expect(client.execute).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO tokenwatch_usage'),
-      [entry.model, entry.inputTokens, entry.outputTokens, entry.costUSD, 'sess-1', 'user-1', entry.timestamp],
+      [entry.model, entry.inputTokens, entry.outputTokens, 100, entry.costUSD, 'sess-1', 'user-1', 'chat', entry.timestamp],
     )
   })
 
-  it('record() uses null for missing sessionId and userId', () => {
+  it('record() uses 0/null for missing reasoningTokens, sessionId, userId, feature', () => {
     const client = makeClient()
     const storage = new MySQLStorage(client)
     storage.record(makeEntry())
     const args = client.execute.mock.calls[0]?.[1] as unknown[]
-    expect(args[4]).toBeNull()
-    expect(args[5]).toBeNull()
+    expect(args[3]).toBe(0)     // reasoning_tokens default
+    expect(args[5]).toBeNull()  // session_id
+    expect(args[6]).toBeNull()  // user_id
+    expect(args[7]).toBeNull()  // feature
   })
 
-  it('getAll() maps rows to UsageEntry[]', async () => {
+  it('getAll() maps rows to UsageEntry[] including new fields', async () => {
     const rows = [
-      { model: 'gpt-4o', input_tokens: 100, output_tokens: 50, cost_usd: '0.00075', session_id: null, user_id: 'user-1', timestamp: '2026-04-16T10:00:00.000Z' },
+      { model: 'gpt-4o', input_tokens: 100, output_tokens: 50, reasoning_tokens: 20, cost_usd: '0.00075', session_id: null, user_id: 'user-1', feature: 'summarizer', timestamp: '2026-04-16T10:00:00.000Z' },
     ]
     const client = makeClient(rows)
     const storage = new MySQLStorage(client)
@@ -59,8 +61,10 @@ describe('MySQLStorage', () => {
       model: 'gpt-4o',
       inputTokens: 100,
       outputTokens: 50,
+      reasoningTokens: 20,
       costUSD: 0.00075,
       userId: 'user-1',
+      feature: 'summarizer',
     })
     expect(entries[0]).not.toHaveProperty('sessionId')
   })

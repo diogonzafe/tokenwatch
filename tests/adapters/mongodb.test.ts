@@ -48,31 +48,35 @@ describe('MongoStorage', () => {
   it('record() inserts a document with correct fields', () => {
     const db = makeDb()
     const storage = new MongoStorage(db)
-    const entry = makeEntry({ sessionId: 'sess-1', userId: 'user-1' })
+    const entry = makeEntry({ sessionId: 'sess-1', userId: 'user-1', reasoningTokens: 50, feature: 'chat' })
     storage.record(entry)
-    expect(db._collection.insertOne).toHaveBeenCalledWith({
+    expect(db._collection.insertOne).toHaveBeenCalledWith(expect.objectContaining({
       model: 'gpt-4o',
       inputTokens: 100,
       outputTokens: 50,
+      reasoningTokens: 50,
       costUSD: 0.00075,
       sessionId: 'sess-1',
       userId: 'user-1',
+      feature: 'chat',
       timestamp: '2026-04-16T10:00:00.000Z',
-    })
+    }))
   })
 
-  it('record() uses null for missing sessionId and userId', () => {
+  it('record() uses null for missing sessionId and userId, omits undefined fields', () => {
     const db = makeDb()
     const storage = new MongoStorage(db)
     storage.record(makeEntry())
     const doc = db._collection.insertOne.mock.calls[0]?.[0] as Record<string, unknown>
     expect(doc['sessionId']).toBeNull()
     expect(doc['userId']).toBeNull()
+    expect(doc).not.toHaveProperty('reasoningTokens')
+    expect(doc).not.toHaveProperty('feature')
   })
 
-  it('getAll() maps documents to UsageEntry[]', async () => {
+  it('getAll() maps documents to UsageEntry[] including new fields', async () => {
     const docs = [
-      { model: 'gpt-4o', inputTokens: 100, outputTokens: 50, costUSD: 0.00075, sessionId: 'sess-1', userId: null, timestamp: '2026-04-16T10:00:00.000Z' },
+      { model: 'gpt-4o', inputTokens: 100, outputTokens: 50, reasoningTokens: 25, costUSD: 0.00075, sessionId: 'sess-1', userId: null, feature: 'rag', timestamp: '2026-04-16T10:00:00.000Z' },
     ]
     const db = makeDb(docs)
     const storage = new MongoStorage(db)
@@ -82,8 +86,10 @@ describe('MongoStorage', () => {
       model: 'gpt-4o',
       inputTokens: 100,
       outputTokens: 50,
+      reasoningTokens: 25,
       costUSD: 0.00075,
       sessionId: 'sess-1',
+      feature: 'rag',
     })
     expect(entries[0]).not.toHaveProperty('userId')
   })

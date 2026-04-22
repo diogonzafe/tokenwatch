@@ -25,7 +25,7 @@ Based on competitive research across Langfuse, Helicone, LangSmith, Portkey, Lit
 
 ### Priority 1 — Immediate Differentiators
 
-#### 1. Reasoning token tracking (o1 / o3 / Claude thinking)
+#### 1. ~~Reasoning token tracking (o1 / o3 / Claude thinking)~~ ✅ Implemented in v0.2.0
 Reasoning models have a third token category (`reasoning_tokens`) that no simple wrapper currently tracks. OpenAI already exposes this in `usage.completion_tokens_details.reasoning_tokens`. Anthropic exposes thinking tokens separately in extended thinking mode.
 
 **Implementation sketch:**
@@ -103,7 +103,7 @@ tracker.getCostForecast()
 
 ---
 
-#### 5. Feature/label tagging (`__feature`)
+#### 5. ~~Feature/label tagging (`__feature`)~~ ✅ Implemented in v0.2.0
 Beyond `sessionId` and `userId`, allow tagging calls by product feature. The report gains a `byFeature` breakdown identical to `byModel` and `byUser`.
 
 **API sketch:**
@@ -128,7 +128,7 @@ tracker.getReport().byFeature
 
 ### Priority 2 — Polish & Ecosystem
 
-#### 14. Embeddings support in `wrapOpenAI`
+#### 14. ~~Embeddings support in `wrapOpenAI`~~ ✅ Implemented in v0.2.0
 
 `wrapOpenAI` currently only intercepts `chat.completions.create`. Users calling `openai.embeddings.create` (RAG pipelines, batch jobs, semantic search) must call `track()` manually — and the docs don't mention this at all.
 
@@ -343,24 +343,24 @@ npx tokenwatch dashboard --port 8080
 
 ## Summary Table
 
-| # | Feature | Effort | Impact | Unique? |
-|---|---|---|---|---|
-| 1 | Reasoning token tracking | Low | High | Yes |
-| 2 | Cached token pricing | Medium | High | Yes |
-| 3 | Per-user/session budgets | Medium | High | Yes |
-| 4 | Cost forecast | Low | High | Yes |
-| 5 | Feature tagging (`__feature`) | Low | High | Yes |
-| 6 | OpenTelemetry exporter | Medium | Medium | No |
-| 7 | Cheaper model suggestions | Low | Medium | No |
-| 8 | LangChain callback handler | Medium | High | No |
-| 9 | Time-filtered reports | Low | Medium | No |
-| 10 | Semantic caching | High | High | No |
-| 11 | Anomaly detection | High | Medium | No |
-| 12 | Cost allocation rules | High | Low | No |
-| 13 | Local web dashboard | High | High | Partial |
-| 14 | Embeddings support in `wrapOpenAI` | Low | High | No |
-| 15 | Agent framework integration guide | Low | High | No |
-| 16 | Lazy / singleton init pattern | Low | Medium | No |
+| # | Feature | Effort | Impact | Unique? | Status |
+|---|---|---|---|---|---|
+| 1 | Reasoning token tracking | Low | High | Yes | ✅ v0.2.0 |
+| 2 | Cached token pricing | Medium | High | Yes | |
+| 3 | Per-user/session budgets | Medium | High | Yes | |
+| 4 | Cost forecast | Low | High | Yes | |
+| 5 | Feature tagging (`__feature`) | Low | High | Yes | ✅ v0.2.0 |
+| 6 | OpenTelemetry exporter | Medium | Medium | No | |
+| 7 | Cheaper model suggestions | Low | Medium | No | |
+| 8 | LangChain callback handler | Medium | High | No | |
+| 9 | Time-filtered reports | Low | Medium | No | |
+| 10 | Semantic caching | High | High | No | |
+| 11 | Anomaly detection | High | Medium | No | |
+| 12 | Cost allocation rules | High | Low | No | |
+| 13 | Local web dashboard | High | High | Partial | |
+| 14 | Embeddings support in `wrapOpenAI` | Low | High | No | ✅ v0.2.0 |
+| 15 | Agent framework integration guide | Low | High | No | |
+| 16 | Lazy / singleton init pattern | Low | Medium | No | |
 
 ---
 
@@ -399,7 +399,7 @@ const tracker = createTracker({ warnIfStaleAfterHours: 24 })
 
 ---
 
-### G3. Postgres / centralised database backend for horizontal scaling
+### G3. ~~Postgres / centralised database backend for horizontal scaling~~ ✅ Implemented in v0.2.0
 
 SQLite is a single-file, single-process database. In multi-instance deployments (e.g. a Node.js app on 3 pods in Kubernetes), each instance writes to its own file and reports are never unified.
 
@@ -446,13 +446,13 @@ The documentation currently focuses on quick-start usage but gives no guidance o
 
 ---
 
-| # | Gap | Effort | Impact | Priority |
-|---|---|---|---|---|
-| G1 | Fix "zero latency" docs claim | Low | Medium | Immediate |
-| G2 | Price staleness warnings | Low | High | High |
-| G3 | Postgres / pluggable storage | High | High | Medium |
-| G4 | Privacy & security README section | Low | High | Immediate |
-| G5 | Production readiness docs | Low | Medium | High |
+| # | Gap | Effort | Impact | Priority | Status |
+|---|---|---|---|---|---|
+| G1 | Fix "zero latency" docs claim | Low | Medium | Immediate | |
+| G2 | Price staleness warnings | Low | High | High | |
+| G3 | Postgres / pluggable storage | High | High | Medium | ✅ v0.2.0 |
+| G4 | Privacy & security README section | Low | High | Immediate | ✅ done |
+| G5 | Production readiness docs | Low | Medium | High | |
 
 ---
 

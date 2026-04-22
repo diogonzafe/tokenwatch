@@ -78,6 +78,9 @@ describe('Full integration — create tracker → wrap → call → report', () 
     // User tracking
     expect(report.byUser['user-1']?.calls).toBe(2)
 
+    // byFeature is always present (empty object when no feature tags used)
+    expect(report.byFeature).toBeDefined()
+
     // Cost is > 0
     expect(report.totalCostUSD).toBeGreaterThan(0)
   })
@@ -102,6 +105,29 @@ describe('Full integration — create tracker → wrap → call → report', () 
     expect(report.totalCostUSD).toBe(0)
     expect(report.totalTokens).toEqual({ input: 0, output: 0 })
     expect(report.byModel).toEqual({})
+  })
+
+  it('byFeature accumulates across providers', async () => {
+    const tracker = createTracker({ syncPrices: false })
+    const client = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            model: 'gpt-4o',
+            usage: { prompt_tokens: 100, completion_tokens: 50 },
+          }),
+        },
+      },
+    }
+    const wrapped = wrapOpenAI(client, tracker)
+    await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [], __feature: 'chat' } as Record<string, unknown>)
+    await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [], __feature: 'chat' } as Record<string, unknown>)
+    await wrapped.chat.completions.create({ model: 'gpt-4o', messages: [], __feature: 'rag' } as Record<string, unknown>)
+
+    const report = await tracker.getReport()
+    expect(report.byFeature['chat']?.calls).toBe(2)
+    expect(report.byFeature['rag']?.calls).toBe(1)
+    expect(report.byFeature['chat']!.costUSD).toBeGreaterThan(0)
   })
 
   it('exportJSON and exportCSV produce valid output', async () => {

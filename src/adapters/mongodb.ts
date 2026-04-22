@@ -30,9 +30,11 @@ interface MongoDocument {
   model: string
   inputTokens: number
   outputTokens: number
+  reasoningTokens?: number
   costUSD: number
   sessionId?: string | null
   userId?: string | null
+  feature?: string | null
   timestamp: string
 }
 
@@ -75,9 +77,11 @@ export class MongoStorage implements IStorage {
         model: entry.model,
         inputTokens: entry.inputTokens,
         outputTokens: entry.outputTokens,
+        ...(entry.reasoningTokens !== undefined && { reasoningTokens: entry.reasoningTokens }),
         costUSD: entry.costUSD,
         sessionId: entry.sessionId ?? null,
         userId: entry.userId ?? null,
+        ...(entry.feature !== undefined && { feature: entry.feature }),
         timestamp: entry.timestamp,
       })
       .catch((err: unknown) => {
@@ -104,9 +108,11 @@ function docToEntry(doc: MongoDocument): UsageEntry {
     model: doc.model,
     inputTokens: doc.inputTokens,
     outputTokens: doc.outputTokens,
+    ...(doc.reasoningTokens != null && doc.reasoningTokens > 0 && { reasoningTokens: doc.reasoningTokens }),
     costUSD: doc.costUSD,
     ...(doc.sessionId != null && { sessionId: doc.sessionId }),
     ...(doc.userId != null && { userId: doc.userId }),
+    ...(doc.feature != null && { feature: doc.feature }),
     timestamp: doc.timestamp,
   }
 }

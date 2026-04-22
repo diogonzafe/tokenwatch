@@ -1,6 +1,6 @@
 # @diogonzafe/tokenwatch
 
-Transparent TypeScript wrapper that intercepts LLM API calls and tracks cost in real-time by session, user and model — without changing anything in your existing code.
+Transparent TypeScript wrapper that intercepts LLM API calls and tracks cost in real-time by session, user, model and feature — without changing anything in your existing code.
 
 Supports **OpenAI**, **Anthropic**, **Google Gemini** and **DeepSeek**.
 
@@ -124,7 +124,12 @@ import { wrapGemini } from '@diogonzafe/tokenwatch'
 
 const genAI = wrapGemini(new GoogleGenerativeAI(process.env.GEMINI_API_KEY!), tracker)
 
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+// __sessionId, __userId, __feature are passed to getGenerativeModel (not per-call)
+const model = genAI.getGenerativeModel({
+  model: 'gemini-2.5-flash',
+  __sessionId: 'session_abc',
+  __feature: 'rag',
+})
 const result = await model.generateContent('Explain quantum computing')
 ```
 
@@ -351,6 +356,10 @@ npx tokenwatch help     # show help
 
   By user:
     user_123                       $0.004231  (11 calls)
+
+  By feature:
+    chat                           $0.002500  (5 calls)
+    rag                            $0.001731  (6 calls)
 ───────────────────────────────────────────────────
 ```
 
@@ -364,6 +373,31 @@ Requires `storage: 'sqlite'` in your app and `better-sqlite3` installed.
 - API keys are **never accessed** by tokenwatch — they remain solely in the provider client
 - SQLite, Postgres, MySQL, and MongoDB data stays **entirely in your own infrastructure** — nothing is transmitted to external services
 - The wrapper is a thin `Proxy` with **no outbound network calls** of its own (only the daily price sync script fetches external data)
+
+---
+
+## TypeScript
+
+`__sessionId`, `__userId`, and `__feature` are typed via the `TrackingMeta` interface, which is automatically merged into the `create` params type by the wrapper. In most setups they just work with no cast required.
+
+If you hit a type error (e.g. with stricter SDK versions), use `as Record<string, unknown>`:
+
+```ts
+await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [],
+  __sessionId: 'sess-1',
+  __feature: 'chat',
+} as Record<string, unknown>)
+```
+
+`TrackingMeta` is exported if you need to annotate your own helper types:
+
+```ts
+import type { TrackingMeta } from '@diogonzafe/tokenwatch'
+
+type MyParams = { model: string; messages: Message[] } & TrackingMeta
+```
 
 ---
 

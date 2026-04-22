@@ -12,6 +12,7 @@ export type {
   ModelStats,
   SessionStats,
   UserStats,
+  FeatureStats,
   ModelPrice,
   PriceMap,
   PricesFile,

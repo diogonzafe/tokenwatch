@@ -75,6 +75,44 @@ describe('wrapGemini', () => {
     expect((await tracker.getReport()).totalCostUSD).toBe(0)
   })
 
+  it('strips __sessionId, __userId and __feature before passing to getGenerativeModel', async () => {
+    const tracker = makeTracker()
+    const client = makeGeminiClient()
+    const wrapped = wrapGemini(client, tracker)
+
+    wrapped.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      __sessionId: 'sess-1',
+      __userId: 'user-1',
+      __feature: 'rag',
+    } as Record<string, unknown>)
+
+    const callArgs = client.getGenerativeModel.mock.calls[0]?.[0] as Record<string, unknown>
+    expect(callArgs).not.toHaveProperty('__sessionId')
+    expect(callArgs).not.toHaveProperty('__userId')
+    expect(callArgs).not.toHaveProperty('__feature')
+  })
+
+  it('records sessionId, userId and feature from getGenerativeModel params', async () => {
+    const tracker = makeTracker()
+    const client = makeGeminiClient()
+    const wrapped = wrapGemini(client, tracker)
+
+    const model = wrapped.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      __sessionId: 'gemini-sess',
+      __userId: 'gemini-user',
+      __feature: 'rag',
+    } as Record<string, unknown>)
+    await model.generateContent('Hello')
+
+    const report = await tracker.getReport()
+    expect(report.bySession['gemini-sess']).toBeDefined()
+    expect(report.byUser['gemini-user']).toBeDefined()
+    expect(report.byFeature['rag']).toBeDefined()
+    expect(report.byFeature['rag']?.calls).toBe(1)
+  })
+
   it('records usage from generateContentStream via response promise', async () => {
     const tracker = makeTracker()
     const client = makeGeminiClient()

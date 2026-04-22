@@ -25,8 +25,8 @@ app.post('/chat', async (req, res) => {
 })
 
 // Admin route — see how much each user has spent
-app.get('/admin/costs', (req, res) => {
-  const report = tracker.getReport()
+app.get('/admin/costs', async (req, res) => {
+  const report = await tracker.getReport()
   res.json(report.byUser)
   // {
   //   'user_001': { costUSD: 0.42, calls: 12 },
@@ -54,12 +54,12 @@ const tracker = createTracker({
 To block requests after the limit, check before each call:
 
 ```ts
-function isOverBudget(): boolean {
-  return tracker.getReport().totalCostUSD >= 10.00
+async function isOverBudget(): Promise<boolean> {
+  return (await tracker.getReport()).totalCostUSD >= 10.00
 }
 
 app.post('/chat', async (req, res) => {
-  if (isOverBudget()) {
+  if (await isOverBudget()) {
     return res.status(429).json({ error: 'Daily budget exceeded' })
   }
   // ...
@@ -87,12 +87,12 @@ for (const message of conversation) {
   })
 }
 
-const report = tracker.getReport()
+const report = await tracker.getReport()
 console.log(report.bySession[sessionId])
 // { costUSD: 0.023, calls: 4 }
 
 // Clear only this session without affecting others
-tracker.resetSession(sessionId)
+await tracker.resetSession(sessionId)
 ```
 
 ---
@@ -106,7 +106,7 @@ const models = ['gpt-4o', 'gpt-4o-mini', 'claude-haiku-4-5', 'gemini-2.5-flash']
 const prompt = 'Summarise this document in 3 bullet points: ...'
 
 for (const model of models) {
-  tracker.resetSession(model)
+  await tracker.resetSession(model)
 
   await openai.chat.completions.create({
     model,
@@ -115,7 +115,7 @@ for (const model of models) {
   })
 }
 
-const report = tracker.getReport()
+const report = await tracker.getReport()
 for (const [model, stats] of Object.entries(report.bySession)) {
   console.log(`${model}: $${stats.costUSD.toFixed(6)} (${stats.calls} call)`)
 }
@@ -169,14 +169,14 @@ import { writeFileSync } from 'node:fs'
 // At end of day:
 
 const date = new Date().toISOString().slice(0, 10)
-const csv = tracker.exportCSV()
+const csv = await tracker.exportCSV()
 
 writeFileSync(`reports/costs-${date}.csv`, csv)
-// timestamp,model,inputTokens,outputTokens,costUSD,sessionId,userId
-// 2026-04-16T08:12:33Z,gpt-4o,1200,340,0.00640000,sess_1,user_001
-// 2026-04-16T08:15:01Z,claude-sonnet-4-6,800,210,0.00555000,sess_2,user_002
+// timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,sessionId,userId,feature
+// 2026-04-16T08:12:33Z,gpt-4o,1200,340,0,0.00640000,sess_1,user_001,chat
+// 2026-04-16T08:15:01Z,claude-sonnet-4-6,800,210,0,0.00555000,sess_2,user_002,summarizer
 
-tracker.reset()
+await tracker.reset()
 ```
 
 ---
@@ -227,13 +227,13 @@ const gemini    = wrapGemini(new GoogleGenerativeAI(process.env.GEMINI_API_KEY),
 
 // All providers share the same tracker
 // getReport() aggregates everything together
-const report = tracker.getReport()
+const report = await tracker.getReport()
 console.log(`Total: $${report.totalCostUSD.toFixed(4)}`)
 console.log(report.byModel)
 // {
-//   'gpt-4o':            { costUSD: 0.05, calls: 10 },
-//   'claude-sonnet-4-6': { costUSD: 0.03, calls: 5  },
-//   'gemini-2.5-flash':  { costUSD: 0.01, calls: 8  },
+//   'gpt-4o':            { costUSD: 0.05, calls: 10, tokens: { input: 10000, output: 2000, reasoning: 0 } },
+//   'claude-sonnet-4-6': { costUSD: 0.03, calls: 5,  tokens: { input: 4000,  output: 800,  reasoning: 0 } },
+//   'gemini-2.5-flash':  { costUSD: 0.01, calls: 8,  tokens: { input: 2400,  output: 480,  reasoning: 0 } },
 // }
 ```
 
@@ -266,6 +266,6 @@ const tracker = createTracker({ storage: 'sqlite' })
 // Survives process restarts
 
 // After a week of usage:
-const report = tracker.getReport()
+const report = await tracker.getReport()
 console.log(`Total cost this week: $${report.totalCostUSD.toFixed(2)}`)
 ```

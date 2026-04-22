@@ -1,24 +1,38 @@
 import { defineConfig } from 'tsup'
 
-export default defineConfig({
-  entry: {
-    index: 'src/index.ts',
-    cli: 'bin/cli.ts',
-    adapters: 'src/adapters/index.ts',
+const sharedExternal = [
+  'openai',
+  '@anthropic-ai/sdk',
+  '@google/generative-ai',
+  'better-sqlite3',
+  'pg',
+  'mysql2',
+  'mongodb',
+]
+
+export default defineConfig([
+  // Library entries — dual ESM + CJS
+  {
+    entry: {
+      index: 'src/index.ts',
+      adapters: 'src/adapters/index.ts',
+    },
+    format: ['esm', 'cjs'],
+    dts: true,
+    clean: true,
+    splitting: false,
+    sourcemap: true,
+    target: 'node20',
+    external: sharedExternal,
   },
-  format: ['esm', 'cjs'],
-  dts: true,
-  clean: true,
-  splitting: false,
-  sourcemap: true,
-  target: 'node20',
-  external: [
-    'openai',
-    '@anthropic-ai/sdk',
-    '@google/generative-ai',
-    'better-sqlite3',
-    'pg',
-    'mysql2',
-    'mongodb',
-  ],
-})
+  // CLI — ESM only (uses import.meta.url)
+  {
+    entry: { cli: 'bin/cli.ts' },
+    format: ['esm'],
+    dts: true,
+    splitting: false,
+    sourcemap: true,
+    target: 'node20',
+    external: sharedExternal,
+  },
+])

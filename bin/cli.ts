@@ -98,6 +98,13 @@ async function cmdReport(): Promise<void> {
     }
   }
 
+  if (Object.keys(report.byFeature).length > 0) {
+    console.log('\n  By feature:')
+    for (const [feature, stats] of Object.entries(report.byFeature)) {
+      console.log(`    ${feature.padEnd(30)} $${stats.costUSD.toFixed(6)}  (${stats.calls} calls)`)
+    }
+  }
+
   console.log('───────────────────────────────────────────────────\n')
 }
 

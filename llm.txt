@@ -1,7 +1,7 @@
 # @diogonzafe/tokenwatch
 
 ## What this library does
-Transparent TypeScript wrapper that intercepts LLM API calls (OpenAI, Anthropic, Google Gemini, DeepSeek) and tracks token usage and cost in real-time by session, user and model. Non-blocking — track() is synchronous; report/reset/export methods are async. No changes required to existing code.
+Transparent TypeScript wrapper that intercepts LLM API calls (OpenAI, Anthropic, Google Gemini, DeepSeek) and tracks token usage and cost in real-time by session, user, model and feature. Non-blocking — track() is synchronous; report/reset/export methods are async. No changes required to existing code.
 
 ## Package
 - npm: @diogonzafe/tokenwatch
@@ -40,10 +40,10 @@ Config fields (all optional):
 }
 
 ### Provider wrappers
-- wrapOpenAI<T>(client: T, tracker): T
-- wrapAnthropic<T>(client: T, tracker): T
-- wrapGemini<T>(client: T, tracker): T
-- wrapDeepSeek<T>(client: T, tracker): T  — alias for wrapOpenAI
+- wrapOpenAI<T>(client: T, tracker): WrappedOpenAI<T>      — augments create() params with TrackingMeta
+- wrapAnthropic<T>(client: T, tracker): WrappedAnthropic<T> — augments create() params with TrackingMeta
+- wrapGemini<T>(client: T, tracker): T                      — returns same type; meta on getGenerativeModel()
+- wrapDeepSeek<T>(client: T, tracker): WrappedOpenAI<T>     — alias for wrapOpenAI
 
 All wrappers:
 - Accept __sessionId, __userId, and __feature as extra fields in the request params
@@ -51,7 +51,7 @@ All wrappers:
 - wrapOpenAI covers: chat.completions.create (streaming + non-streaming) and embeddings.create
 - wrapOpenAI reasoning tokens: reads completion_tokens_details.reasoning_tokens; priced as output tokens (separate from completion_tokens in o1/o3/o4)
 - wrapAnthropic reasoning tokens: approximate (thinking block chars ÷ 4); informational only — thinking is already included in outputTokens, not added to cost
-- wrapGemini: __feature is passed on getGenerativeModel() params, not per-call
+- wrapGemini: __sessionId, __userId, __feature are passed on getGenerativeModel() params (not per generateContent call) — all calls from that model instance share the same meta
 - Return the exact same type as the input client (generics preserve types)
 - Track cost after a successful call; do nothing if the API throws
 - Support streaming
@@ -74,20 +74,21 @@ Built-in implementations: MemoryStorage (default), SqliteStorage (requires bette
 ### PostgresStorage
 - Peer dep: pg >= 8
 - Constructor: new PostgresStorage(pool: pg.Pool | pg.Client)
-- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table
-- Schema: id BIGSERIAL, model TEXT, input_tokens INT, output_tokens INT, cost_usd NUMERIC, session_id TEXT, user_id TEXT, timestamp TIMESTAMPTZ
+- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times (IF NOT EXISTS + incremental ALTER TABLE ADD COLUMN IF NOT EXISTS for databases created before v0.2.0)
+- Schema: id BIGSERIAL, model TEXT, input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cost_usd NUMERIC, session_id TEXT, user_id TEXT, feature TEXT, timestamp TIMESTAMPTZ
 
 ### MySQLStorage
 - Peer dep: mysql2 >= 3
 - Constructor: new MySQLStorage(pool: mysql2.Pool | mysql2.Connection)
-- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table
-- Schema: id BIGINT UNSIGNED AUTO_INCREMENT, model VARCHAR(255), input_tokens INT, output_tokens INT, cost_usd DECIMAL(18,8), session_id VARCHAR(255), user_id VARCHAR(255), timestamp DATETIME(3)
+- Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times (IF NOT EXISTS + incremental ALTER TABLE ADD COLUMN IF NOT EXISTS for databases created before v0.2.0)
+- Schema: id BIGINT UNSIGNED AUTO_INCREMENT, model VARCHAR(255), input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cost_usd DECIMAL(18,8), session_id VARCHAR(255), user_id VARCHAR(255), feature VARCHAR(255), timestamp DATETIME(3)
 
 ### MongoStorage
 - Peer dep: mongodb >= 6
 - Constructor: new MongoStorage(db: Db)
 - Extra method: createIndexes() → Promise<void>  — creates indexes on timestamp, sessionId, userId, model
 - Collection name: tokenwatch_usage
+- Document fields: model, inputTokens, outputTokens, reasoningTokens? (omitted if 0), costUSD, sessionId (null if absent), userId (null if absent), feature? (omitted if absent), timestamp
 
 Custom adapter: any object implementing IStorage works as storage value.
 
@@ -145,7 +146,7 @@ scripts/scrape-prices.mjs — fetches LiteLLM JSON, run by GitHub Action
 ## CLI
 tokenwatch sync     — fetch and cache remote prices
 tokenwatch prices   — list bundled models and prices
-tokenwatch report   — read ~/.tokenwatch/usage.db and print cost breakdown (total, by model, by user, by session)
+tokenwatch report   — read ~/.tokenwatch/usage.db and print cost breakdown (total, by model, by user, by session, by feature)
                       shows "No SQLite database found" if db doesn't exist, "No usage recorded yet" if empty
 tokenwatch help     — help
 
