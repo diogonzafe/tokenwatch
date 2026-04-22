@@ -40,7 +40,9 @@ describe('fetchRemotePrices', () => {
     } as unknown as Response)
 
     const result = await fetchRemotePrices('https://example.com/prices.json')
-    expect(result).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+    expect(result).not.toBeNull()
+    expect(result!.models).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+    expect(result!.updated_at).toBe('2026-04-17')
   })
 
   it('returns null when fetch response is not ok', async () => {
@@ -78,7 +80,9 @@ describe('loadCachedPrices', () => {
     mockReadFile.mockResolvedValue(JSON.stringify(payload))
 
     const result = await loadCachedPrices()
-    expect(result).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+    expect(result).not.toBeNull()
+    expect(result!.models).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+    expect(result!.updated_at).toBe('2026-04-17')
   })
 
   it('returns null when cache file is stale (> 24h)', async () => {
@@ -110,7 +114,8 @@ describe('getRemotePrices', () => {
 
     const result = await getRemotePrices()
 
-    expect(result).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+    expect(result).not.toBeNull()
+    expect(result!.models).toMatchObject({ 'gpt-4o': { input: 2.5 } })
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
@@ -124,7 +129,8 @@ describe('getRemotePrices', () => {
     const result = await getRemotePrices()
 
     expect(global.fetch).toHaveBeenCalled()
-    expect(result).toMatchObject({ 'gpt-4o': { input: 2.5 } })
+    expect(result).not.toBeNull()
+    expect(result!.models).toMatchObject({ 'gpt-4o': { input: 2.5 } })
   })
 
   it('returns null when cache misses and fetch fails', async () => {

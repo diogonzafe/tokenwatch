@@ -34,24 +34,26 @@ describe('MySQLStorage', () => {
     storage.record(entry)
     expect(client.execute).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO tokenwatch_usage'),
-      [entry.model, entry.inputTokens, entry.outputTokens, 100, entry.costUSD, 'sess-1', 'user-1', 'chat', entry.timestamp],
+      [entry.model, entry.inputTokens, entry.outputTokens, 100, 0, 0, entry.costUSD, 'sess-1', 'user-1', 'chat', entry.timestamp],
     )
   })
 
-  it('record() uses 0/null for missing reasoningTokens, sessionId, userId, feature', () => {
+  it('record() uses 0/null for missing reasoningTokens, cachedTokens, sessionId, userId, feature', () => {
     const client = makeClient()
     const storage = new MySQLStorage(client)
     storage.record(makeEntry())
     const args = client.execute.mock.calls[0]?.[1] as unknown[]
     expect(args[3]).toBe(0)     // reasoning_tokens default
-    expect(args[5]).toBeNull()  // session_id
-    expect(args[6]).toBeNull()  // user_id
-    expect(args[7]).toBeNull()  // feature
+    expect(args[4]).toBe(0)     // cached_tokens default
+    expect(args[5]).toBe(0)     // cache_creation_tokens default
+    expect(args[7]).toBeNull()  // session_id
+    expect(args[8]).toBeNull()  // user_id
+    expect(args[9]).toBeNull()  // feature
   })
 
   it('getAll() maps rows to UsageEntry[] including new fields', async () => {
     const rows = [
-      { model: 'gpt-4o', input_tokens: 100, output_tokens: 50, reasoning_tokens: 20, cost_usd: '0.00075', session_id: null, user_id: 'user-1', feature: 'summarizer', timestamp: '2026-04-16T10:00:00.000Z' },
+      { model: 'gpt-4o', input_tokens: 100, output_tokens: 50, reasoning_tokens: 20, cached_tokens: 0, cache_creation_tokens: 0, cost_usd: '0.00075', session_id: null, user_id: 'user-1', feature: 'summarizer', timestamp: '2026-04-16T10:00:00.000Z' },
     ]
     const client = makeClient(rows)
     const storage = new MySQLStorage(client)

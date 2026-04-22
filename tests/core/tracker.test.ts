@@ -79,7 +79,7 @@ describe('createTracker', () => {
     tracker.track({ model: 'gpt-4o-mini', inputTokens: 500, outputTokens: 200 })
     const csv = await tracker.exportCSV()
     const lines = csv.split('\n')
-    expect(lines[0]).toBe('timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,sessionId,userId,feature')
+    expect(lines[0]).toBe('timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature')
     expect(lines).toHaveLength(3) // header + 2 rows
   })
 

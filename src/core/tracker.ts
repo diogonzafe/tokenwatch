@@ -4,6 +4,9 @@ import type {
   TrackerConfig,
   UsageEntry,
   Report,
+  ReportOptions,
+  CostForecast,
+  ForecastOptions,
   ModelStats,
   SessionStats,
   UserStats,
@@ -11,20 +14,31 @@ import type {
   ModelPrice,
   PriceMap,
   IStorage,
+  BudgetConfig,
 } from '../types/index.js'
 import { resolvePrice, findPrice, calculateCost } from './pricing.js'
+import { maybeSuggestCheaperModel } from './suggestions.js'
 import { createStorage } from './storage.js'
 import { getRemotePrices } from './sync.js'
 import bundledPricesFile from '../../prices.json' assert { type: 'json' }
 
 const bundledPrices: PriceMap = bundledPricesFile.models as PriceMap
+const bundledUpdatedAt: string = (bundledPricesFile as { updated_at?: string }).updated_at ?? ''
 
 // ─── Config validation schema ─────────────────────────────────────────────────
 
 const ModelPriceSchema = z.object({
   input: z.number().nonnegative(),
   output: z.number().nonnegative(),
+  cachedInput: z.number().nonnegative().optional(),
+  cacheCreationInput: z.number().nonnegative().optional(),
   maxInputTokens: z.number().positive().optional(),
+})
+
+const BudgetConfigSchema = z.object({
+  threshold: z.number().positive(),
+  webhookUrl: z.string().url(),
+  mode: z.enum(['once', 'always']).optional().default('once'),
 })
 
 // storage can be a string enum or an IStorage instance — validated separately
@@ -43,6 +57,12 @@ const TrackerConfigSchema = z.object({
   webhookUrl: z.string().url().optional(),
   syncPrices: z.boolean().optional().default(true),
   customPrices: z.record(z.string(), ModelPriceSchema).optional(),
+  warnIfStaleAfterHours: z.number().nonnegative().optional().default(72),
+  budgets: z.object({
+    perUser: BudgetConfigSchema.optional(),
+    perSession: BudgetConfigSchema.optional(),
+  }).optional(),
+  suggestions: z.boolean().optional().default(false),
 })
 
 export function createTracker(config: TrackerConfig = {}): Tracker {
@@ -58,6 +78,9 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     webhookUrl,
     syncPrices,
     customPrices,
+    warnIfStaleAfterHours,
+    budgets,
+    suggestions,
   } = parsed.data
 
   const storage: IStorage =
@@ -66,22 +89,49 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       : createStorage(storageOption)
 
   // Fetch remote prices in the background — bundled prices are used as fallback
-  // until the sync resolves. Zero latency added to createTracker().
+  // until the sync resolves. Negligible overhead added to createTracker().
   let remotePrices: PriceMap | undefined
+  let pricesUpdatedAt: string = bundledUpdatedAt
   if (syncPrices) {
     getRemotePrices()
       .then((result) => {
-        if (result) remotePrices = result
+        if (result) {
+          remotePrices = result.models
+          pricesUpdatedAt = result.updated_at
+        }
       })
       .catch(() => {
         // best-effort — bundled prices remain in use
       })
   }
 
+  // Warn if prices are stale (checked lazily on first access)
+  let stalenessChecked = false
+  function maybeWarnStaleness(): void {
+    if (stalenessChecked || !warnIfStaleAfterHours) return
+    stalenessChecked = true
+    if (!pricesUpdatedAt) return
+    try {
+      const updatedMs = new Date(pricesUpdatedAt).getTime()
+      const ageHours = (Date.now() - updatedMs) / (1000 * 60 * 60)
+      if (ageHours > warnIfStaleAfterHours) {
+        console.warn(
+          `[tokenwatch] Price data is ${Math.round(ageHours)}h old (updated_at: ${pricesUpdatedAt}). ` +
+            `Run "tokenwatch sync" to refresh, or set warnIfStaleAfterHours: 0 to suppress.`,
+        )
+      }
+    } catch {
+      // best-effort
+    }
+  }
+
   let alertFired = false
+  const firedUserAlerts = new Set<string>()
+  const firedSessionAlerts = new Set<string>()
   const startedAt = new Date().toISOString()
 
   function resolveModelPrice(model: string) {
+    maybeWarnStaleness()
     return resolvePrice(model, {
       bundledPrices,
       ...(customPrices !== undefined && { customPrices: customPrices as PriceMap }),
@@ -91,48 +141,110 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
 
   function track(entry: Omit<UsageEntry, 'costUSD' | 'timestamp'>): void {
     const price = resolveModelPrice(entry.model)
-    // Cost is always based on inputTokens + outputTokens only.
-    // Provider wrappers are responsible for including any billing-relevant tokens
-    // (e.g. OpenAI reasoning_tokens) in outputTokens before calling track().
-    // reasoningTokens on UsageEntry is purely informational for the report.
-    const costUSD = calculateCost(entry.inputTokens, entry.outputTokens, price)
+    const costUSD = calculateCost(
+      entry.inputTokens,
+      entry.outputTokens,
+      price,
+      entry.cachedTokens,
+      entry.cacheCreationTokens,
+    )
     const full: UsageEntry = {
       ...entry,
       costUSD,
       timestamp: new Date().toISOString(),
     }
     storage.record(full)
-    maybeFireAlert()
+    maybeFireAlerts(full)
+    if (suggestions) {
+      maybeSuggestCheaperModel(entry.model, costUSD, entry.inputTokens, entry.outputTokens, {
+        bundledPrices,
+        ...(customPrices !== undefined && { customPrices: customPrices as PriceMap }),
+        ...(remotePrices !== undefined && { remotePrices }),
+      })
+    }
   }
 
-  function maybeFireAlert(): void {
-    if (!alertThreshold || !webhookUrl || alertFired) return
-    // Claim the slot before going async — prevents double-fire when two
-    // track() calls happen before the first Promise resolves.
-    alertFired = true
-    Promise.resolve(storage.getAll()).then((entries) => {
-      const total = computeTotal(entries)
-      if (total < alertThreshold!) {
-        alertFired = false // threshold not yet reached — release the slot
-        return
-      }
-      const payload = {
-        text: `[tokenwatch] Alert: total cost reached $${total.toFixed(4)} USD (threshold: $${alertThreshold})`,
-      }
-      fetch(webhookUrl!, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+  function maybeFireAlerts(entry: UsageEntry): void {
+    // Global threshold alert
+    if (alertThreshold && webhookUrl && !alertFired) {
+      alertFired = true
+      Promise.resolve(storage.getAll()).then((entries) => {
+        const total = computeTotal(entries)
+        if (total < alertThreshold!) {
+          alertFired = false
+          return
+        }
+        fireWebhook(webhookUrl!, {
+          text: `[tokenwatch] Alert: total cost reached $${total.toFixed(4)} USD (threshold: $${alertThreshold})`,
+        })
       }).catch(() => {
-        // fire-and-forget
+        alertFired = false
       })
+    }
+
+    // Per-user budget alert
+    if (budgets?.perUser && entry.userId) {
+      const cfg = budgets.perUser
+      const uid = entry.userId
+      if (cfg.mode === 'always' || !firedUserAlerts.has(uid)) {
+        // Claim the slot synchronously before going async — prevents double-fire
+        if (cfg.mode !== 'always') firedUserAlerts.add(uid)
+        Promise.resolve(storage.getAll()).then((entries) => {
+          const userCost = entries
+            .filter((e) => e.userId === uid)
+            .reduce((s, e) => s + e.costUSD, 0)
+          if (userCost >= cfg.threshold) {
+            fireWebhook(cfg.webhookUrl, {
+              text: `[tokenwatch] Budget alert: user "${uid}" reached $${userCost.toFixed(4)} USD (threshold: $${cfg.threshold})`,
+            })
+          } else {
+            if (cfg.mode !== 'always') firedUserAlerts.delete(uid) // release — threshold not yet met
+          }
+        }).catch(() => {
+          if (cfg.mode !== 'always') firedUserAlerts.delete(uid) // release on storage error
+        })
+      }
+    }
+
+    // Per-session budget alert
+    if (budgets?.perSession && entry.sessionId) {
+      const cfg = budgets.perSession
+      const sid = entry.sessionId
+      if (cfg.mode === 'always' || !firedSessionAlerts.has(sid)) {
+        // Claim the slot synchronously before going async — prevents double-fire
+        if (cfg.mode !== 'always') firedSessionAlerts.add(sid)
+        Promise.resolve(storage.getAll()).then((entries) => {
+          const sessionCost = entries
+            .filter((e) => e.sessionId === sid)
+            .reduce((s, e) => s + e.costUSD, 0)
+          if (sessionCost >= cfg.threshold) {
+            fireWebhook(cfg.webhookUrl, {
+              text: `[tokenwatch] Budget alert: session "${sid}" reached $${sessionCost.toFixed(4)} USD (threshold: $${cfg.threshold})`,
+            })
+          } else {
+            if (cfg.mode !== 'always') firedSessionAlerts.delete(sid) // release
+          }
+        }).catch(() => {
+          if (cfg.mode !== 'always') firedSessionAlerts.delete(sid) // release on storage error
+        })
+      }
+    }
+  }
+
+  function fireWebhook(url: string, payload: { text: string }): void {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     }).catch(() => {
-      alertFired = false // best-effort — release slot on storage error
+      // fire-and-forget
     })
   }
 
-  async function getReport(): Promise<Report> {
-    const entries = await Promise.resolve(storage.getAll())
+  async function getReport(options?: ReportOptions): Promise<Report> {
+    const allEntries = await Promise.resolve(storage.getAll())
+    const entries = filterEntries(allEntries, options)
+
     const byModel: Record<string, ModelStats> = {}
     const bySession: Record<string, SessionStats> = {}
     const byUser: Record<string, UserStats> = {}
@@ -141,21 +253,27 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     let totalInput = 0
     let totalOutput = 0
     let totalCost = 0
-    let lastTimestamp = startedAt
+    let periodFrom = options ? (entries[0]?.timestamp ?? startedAt) : startedAt
+    let lastTimestamp = periodFrom
 
     for (const e of entries) {
-      totalInput += e.inputTokens
+      totalInput += e.inputTokens + (e.cachedTokens ?? 0) + (e.cacheCreationTokens ?? 0)
       totalOutput += e.outputTokens
       totalCost += e.costUSD
       if (e.timestamp > lastTimestamp) lastTimestamp = e.timestamp
 
       // byModel
-      const m = (byModel[e.model] ??= { costUSD: 0, calls: 0, tokens: { input: 0, output: 0, reasoning: 0 } })
+      const m = (byModel[e.model] ??= {
+        costUSD: 0,
+        calls: 0,
+        tokens: { input: 0, output: 0, reasoning: 0, cached: 0 },
+      })
       m.costUSD += e.costUSD
       m.calls += 1
-      m.tokens.input += e.inputTokens
+      m.tokens.input += e.inputTokens + (e.cachedTokens ?? 0) + (e.cacheCreationTokens ?? 0)
       m.tokens.output += e.outputTokens
       m.tokens.reasoning += e.reasoningTokens ?? 0
+      m.tokens.cached += e.cachedTokens ?? 0
 
       // bySession
       if (e.sessionId) {
@@ -179,6 +297,11 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       }
     }
 
+    // When filtering, use the actual first entry's timestamp as period.from
+    if (options && entries.length > 0) {
+      periodFrom = entries[0]?.timestamp ?? periodFrom
+    }
+
     return {
       totalCostUSD: totalCost,
       totalTokens: { input: totalInput, output: totalOutput },
@@ -186,17 +309,68 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       bySession,
       byUser,
       byFeature,
-      period: { from: startedAt, to: lastTimestamp },
+      period: { from: periodFrom, to: lastTimestamp },
+      ...(pricesUpdatedAt ? { pricesUpdatedAt } : {}),
+    }
+  }
+
+  async function getCostForecast(options: ForecastOptions = {}): Promise<CostForecast> {
+    const windowHours = options.windowHours ?? 24
+    const allEntries = await Promise.resolve(storage.getAll())
+
+    const now = Date.now()
+    const windowStart = now - windowHours * 60 * 60 * 1000
+    const windowEntries = allEntries.filter(
+      (e) => new Date(e.timestamp).getTime() >= windowStart,
+    )
+
+    if (windowEntries.length < 2) {
+      return {
+        burnRatePerHour: 0,
+        projectedDailyCostUSD: 0,
+        projectedMonthlyCostUSD: 0,
+        basedOnHours: 0,
+        basedOnPeriod: null,
+      }
+    }
+
+    const first = windowEntries[0]?.timestamp ?? ''
+    const last = windowEntries[windowEntries.length - 1]?.timestamp ?? ''
+    const actualMs = new Date(last).getTime() - new Date(first).getTime()
+    const actualHours = actualMs / (1000 * 60 * 60)
+
+    if (actualHours < 0.001) {
+      return {
+        burnRatePerHour: 0,
+        projectedDailyCostUSD: 0,
+        projectedMonthlyCostUSD: 0,
+        basedOnHours: 0,
+        basedOnPeriod: { from: first, to: last },
+      }
+    }
+
+    const totalCost = windowEntries.reduce((s, e) => s + e.costUSD, 0)
+    const burnRatePerHour = totalCost / actualHours
+
+    return {
+      burnRatePerHour,
+      projectedDailyCostUSD: burnRatePerHour * 24,
+      projectedMonthlyCostUSD: burnRatePerHour * 24 * 30,
+      basedOnHours: Math.round(actualHours * 100) / 100,
+      basedOnPeriod: { from: first, to: last },
     }
   }
 
   async function reset(): Promise<void> {
     await Promise.resolve(storage.clearAll())
     alertFired = false
+    firedUserAlerts.clear()
+    firedSessionAlerts.clear()
   }
 
   async function resetSession(sessionId: string): Promise<void> {
     await Promise.resolve(storage.clearSession(sessionId))
+    firedSessionAlerts.delete(sessionId)
   }
 
   async function exportJSON(): Promise<string> {
@@ -205,7 +379,8 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
 
   async function exportCSV(): Promise<string> {
     const entries = await Promise.resolve(storage.getAll())
-    const header = 'timestamp,model,inputTokens,outputTokens,reasoningTokens,costUSD,sessionId,userId,feature'
+    const header =
+      'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature'
     const rows = entries.map((e) =>
       [
         csvEscape(e.timestamp),
@@ -213,6 +388,8 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
         e.inputTokens,
         e.outputTokens,
         e.reasoningTokens ?? 0,
+        e.cachedTokens ?? 0,
+        e.cacheCreationTokens ?? 0,
         e.costUSD.toFixed(8),
         csvEscape(e.sessionId ?? ''),
         csvEscape(e.userId ?? ''),
@@ -230,11 +407,56 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     }) ?? null
   }
 
-  return { track, getReport, reset, resetSession, exportJSON, exportCSV, getModelInfo }
+  return {
+    track,
+    getReport,
+    getCostForecast,
+    reset,
+    resetSession,
+    exportJSON,
+    exportCSV,
+    getModelInfo,
+  }
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function computeTotal(entries: UsageEntry[]): number {
   return entries.reduce((sum, e) => sum + e.costUSD, 0)
+}
+
+/** Parse a 'last' shorthand like '24h', '7d' into milliseconds */
+function parseLastMs(last: string): number {
+  const match = /^(\d+(?:\.\d+)?)(h|d)$/.exec(last.trim())
+  if (!match) throw new Error(`[tokenwatch] Invalid "last" value: "${last}". Use e.g. "24h", "7d".`)
+  const value = parseFloat(match[1] ?? '0')
+  const unit = match[2] ?? 'h'
+  return unit === 'h' ? value * 60 * 60 * 1000 : value * 24 * 60 * 60 * 1000
+}
+
+function filterEntries(entries: UsageEntry[], options?: ReportOptions): UsageEntry[] {
+  if (!options) return entries
+
+  let sinceMs: number | undefined
+  let untilMs: number | undefined
+
+  if (options.last) {
+    sinceMs = Date.now() - parseLastMs(options.last)
+  } else if (options.since) {
+    sinceMs = new Date(options.since).getTime()
+  }
+  if (options.until) {
+    untilMs = new Date(options.until).getTime()
+  }
+
+  if (sinceMs === undefined && untilMs === undefined) return entries
+
+  return entries.filter((e) => {
+    const ts = new Date(e.timestamp).getTime()
+    if (sinceMs !== undefined && ts < sinceMs) return false
+    if (untilMs !== undefined && ts > untilMs) return false
+    return true
+  })
 }
 
 /** Wrap a CSV field value in double-quotes if it contains commas, quotes, or newlines. */

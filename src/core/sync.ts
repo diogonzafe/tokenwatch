@@ -10,27 +10,33 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const REMOTE_URL =
   'https://raw.githubusercontent.com/diogonzafe/tokenwatch/main/prices.json'
 
-export async function fetchRemotePrices(url = REMOTE_URL): Promise<PriceMap | null> {
+export interface PricesResult {
+  models: PriceMap
+  updated_at: string
+}
+
+export async function fetchRemotePrices(url = REMOTE_URL): Promise<PricesResult | null> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(8_000) })
     if (!res.ok) return null
     const data = (await res.json()) as PricesFile
     if (!data?.models) return null
     await persistCache(data)
-    return data.models
+    return { models: data.models, updated_at: data.updated_at ?? '' }
   } catch {
     return null
   }
 }
 
-export async function loadCachedPrices(): Promise<PriceMap | null> {
+export async function loadCachedPrices(): Promise<PricesResult | null> {
   if (!existsSync(CACHE_FILE)) return null
   try {
     const raw = await readFile(CACHE_FILE, 'utf8')
     const data = JSON.parse(raw) as PricesFile & { _cachedAt?: number }
     const age = Date.now() - (data._cachedAt ?? 0)
     if (age > CACHE_TTL_MS) return null
-    return data.models ?? null
+    if (!data.models) return null
+    return { models: data.models, updated_at: data.updated_at ?? '' }
   } catch {
     return null
   }
@@ -47,12 +53,12 @@ async function persistCache(data: PricesFile): Promise<void> {
 }
 
 /**
- * Returns the best available remote price map:
+ * Returns the best available remote price result:
  * 1. Valid local cache (< 24h)
  * 2. Fresh remote fetch (also updates cache)
  * 3. null if both fail
  */
-export async function getRemotePrices(): Promise<PriceMap | null> {
+export async function getRemotePrices(): Promise<PricesResult | null> {
   const cached = await loadCachedPrices()
   if (cached) return cached
   return fetchRemotePrices()

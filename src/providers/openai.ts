@@ -6,12 +6,17 @@ interface CompletionTokenDetails {
   reasoning_tokens?: number
 }
 
+interface PromptTokenDetails {
+  cached_tokens?: number
+}
+
 interface Usage {
   prompt_tokens?: number
   completion_tokens?: number
   input_tokens?: number
   output_tokens?: number
   completion_tokens_details?: CompletionTokenDetails | null
+  prompt_tokens_details?: PromptTokenDetails | null
 }
 
 interface Completion {
@@ -88,12 +93,17 @@ function extractUsage(usage: Usage | null | undefined): {
   inputTokens: number
   outputTokens: number
   reasoningTokens: number
+  cachedTokens: number
 } {
-  if (!usage) return { inputTokens: 0, outputTokens: 0, reasoningTokens: 0 }
+  if (!usage) return { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cachedTokens: 0 }
+  const totalInput = usage.prompt_tokens ?? usage.input_tokens ?? 0
+  const cachedTokens = usage.prompt_tokens_details?.cached_tokens ?? 0
   return {
-    inputTokens: usage.prompt_tokens ?? usage.input_tokens ?? 0,
+    // inputTokens = regular (non-cached) input; OpenAI prompt_tokens includes cached tokens
+    inputTokens: totalInput - cachedTokens,
     outputTokens: usage.completion_tokens ?? usage.output_tokens ?? 0,
     reasoningTokens: usage.completion_tokens_details?.reasoning_tokens ?? 0,
+    cachedTokens,
   }
 }
 
@@ -106,6 +116,7 @@ function trackWithMeta(
   sessionId: string | undefined,
   userId: string | undefined,
   feature: string | undefined,
+  cachedTokens = 0,
 ): void {
   // OpenAI bills reasoning_tokens at output price, separately from completion_tokens.
   // We fold them into outputTokens so the cost is correct, and also store them in
@@ -115,6 +126,7 @@ function trackWithMeta(
     inputTokens,
     outputTokens: outputTokens + reasoningTokens,
     ...(reasoningTokens > 0 && { reasoningTokens }),
+    ...(cachedTokens > 0 && { cachedTokens }),
     ...(sessionId !== undefined && { sessionId }),
     ...(userId !== undefined && { userId }),
     ...(feature !== undefined && { feature }),
@@ -136,14 +148,14 @@ async function* wrapStream(
     lastChunk = chunk
     yield chunk
   }
-  const { inputTokens, outputTokens, reasoningTokens } = extractUsage(lastChunk?.usage)
+  const { inputTokens, outputTokens, reasoningTokens, cachedTokens } = extractUsage(lastChunk?.usage)
   if (!lastChunk?.usage) {
     console.warn(
       `[tokenwatch] No usage data in stream for model "${model}". Cost recorded as $0. ` +
         `Pass stream_options: { include_usage: true } to get accurate costs.`,
     )
   }
-  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature)
+  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature, cachedTokens)
 }
 
 // ─── Public wrapper ───────────────────────────────────────────────────────────
@@ -180,7 +192,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
         }
 
         const completion = result as Completion
-        const { inputTokens, outputTokens, reasoningTokens } = extractUsage(completion.usage)
+        const { inputTokens, outputTokens, reasoningTokens, cachedTokens } = extractUsage(completion.usage)
         trackWithMeta(
           tracker,
           completion.model ?? model,
@@ -190,6 +202,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
           sessionId,
           userId,
           feature,
+          cachedTokens,
         )
 
         return result

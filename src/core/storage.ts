@@ -63,19 +63,21 @@ export class SqliteStorage implements IStorage {
   private migrate(): void {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS usage (
-        id               INTEGER PRIMARY KEY AUTOINCREMENT,
-        model            TEXT    NOT NULL,
-        input_tokens     INTEGER NOT NULL,
-        output_tokens    INTEGER NOT NULL,
-        reasoning_tokens INTEGER NOT NULL DEFAULT 0,
-        cost_usd         REAL    NOT NULL,
-        session_id       TEXT,
-        user_id          TEXT,
-        feature          TEXT,
-        timestamp        TEXT    NOT NULL
+        id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+        model                 TEXT    NOT NULL,
+        input_tokens          INTEGER NOT NULL,
+        output_tokens         INTEGER NOT NULL,
+        reasoning_tokens      INTEGER NOT NULL DEFAULT 0,
+        cached_tokens         INTEGER NOT NULL DEFAULT 0,
+        cache_creation_tokens INTEGER NOT NULL DEFAULT 0,
+        cost_usd              REAL    NOT NULL,
+        session_id            TEXT,
+        user_id               TEXT,
+        feature               TEXT,
+        timestamp             TEXT    NOT NULL
       )
     `)
-    // Incremental migrations for databases created before v0.2.0
+    // Incremental migrations for databases created before v0.2.0 / v0.3.0
     const cols = (this.db.prepare(`PRAGMA table_info(usage)`).all() as Array<{ name: string }>)
       .map((c) => c.name)
     if (!cols.includes('reasoning_tokens')) {
@@ -84,20 +86,29 @@ export class SqliteStorage implements IStorage {
     if (!cols.includes('feature')) {
       this.db.exec(`ALTER TABLE usage ADD COLUMN feature TEXT`)
     }
+    if (!cols.includes('cached_tokens')) {
+      this.db.exec(`ALTER TABLE usage ADD COLUMN cached_tokens INTEGER NOT NULL DEFAULT 0`)
+    }
+    if (!cols.includes('cache_creation_tokens')) {
+      this.db.exec(`ALTER TABLE usage ADD COLUMN cache_creation_tokens INTEGER NOT NULL DEFAULT 0`)
+    }
   }
 
   record(entry: UsageEntry): void {
     this.db
       .prepare(
         `INSERT INTO usage
-         (model, input_tokens, output_tokens, reasoning_tokens, cost_usd, session_id, user_id, feature, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
+          cost_usd, session_id, user_id, feature, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         entry.model,
         entry.inputTokens,
         entry.outputTokens,
         entry.reasoningTokens ?? 0,
+        entry.cachedTokens ?? 0,
+        entry.cacheCreationTokens ?? 0,
         entry.costUSD,
         entry.sessionId ?? null,
         entry.userId ?? null,
@@ -112,6 +123,8 @@ export class SqliteStorage implements IStorage {
       input_tokens: number
       output_tokens: number
       reasoning_tokens: number
+      cached_tokens: number
+      cache_creation_tokens: number
       cost_usd: number
       session_id: string | null
       user_id: string | null
@@ -124,6 +137,8 @@ export class SqliteStorage implements IStorage {
       inputTokens: r.input_tokens,
       outputTokens: r.output_tokens,
       ...(r.reasoning_tokens > 0 && { reasoningTokens: r.reasoning_tokens }),
+      ...(r.cached_tokens > 0 && { cachedTokens: r.cached_tokens }),
+      ...(r.cache_creation_tokens > 0 && { cacheCreationTokens: r.cache_creation_tokens }),
       costUSD: r.cost_usd,
       ...(r.session_id != null && { sessionId: r.session_id }),
       ...(r.user_id != null && { userId: r.user_id }),

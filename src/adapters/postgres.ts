@@ -29,42 +29,49 @@ export class PostgresStorage implements IStorage {
   constructor(private readonly client: QueryClient) {}
 
   /** Creates the `tokenwatch_usage` table if it does not already exist.
-   *  Also adds new columns for databases created before v0.2.0. */
+   *  Also adds new columns for databases created before v0.2.0 / v0.3.0. */
   async migrate(): Promise<void> {
     await this.client.query(`
       CREATE TABLE IF NOT EXISTS tokenwatch_usage (
-        id               BIGSERIAL PRIMARY KEY,
-        model            TEXT        NOT NULL,
-        input_tokens     INTEGER     NOT NULL,
-        output_tokens    INTEGER     NOT NULL,
-        reasoning_tokens INTEGER     NOT NULL DEFAULT 0,
-        cost_usd         NUMERIC     NOT NULL,
-        session_id       TEXT,
-        user_id          TEXT,
-        feature          TEXT,
-        timestamp        TIMESTAMPTZ NOT NULL
+        id                    BIGSERIAL PRIMARY KEY,
+        model                 TEXT        NOT NULL,
+        input_tokens          INTEGER     NOT NULL,
+        output_tokens         INTEGER     NOT NULL,
+        reasoning_tokens      INTEGER     NOT NULL DEFAULT 0,
+        cached_tokens         INTEGER     NOT NULL DEFAULT 0,
+        cache_creation_tokens INTEGER     NOT NULL DEFAULT 0,
+        cost_usd              NUMERIC     NOT NULL,
+        session_id            TEXT,
+        user_id               TEXT,
+        feature               TEXT,
+        timestamp             TIMESTAMPTZ NOT NULL
       )
     `)
-    // Incremental migrations for databases created before v0.2.0
-    await this.client.query(`
-      ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS reasoning_tokens INTEGER NOT NULL DEFAULT 0
-    `).catch(() => { /* column already exists in older Postgres versions that don't support IF NOT EXISTS */ })
-    await this.client.query(`
-      ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS feature TEXT
-    `).catch(() => { /* same */ })
+    // Incremental migrations for databases created before v0.2.0 / v0.3.0
+    for (const col of [
+      'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS reasoning_tokens INTEGER NOT NULL DEFAULT 0',
+      'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS feature TEXT',
+      'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS cached_tokens INTEGER NOT NULL DEFAULT 0',
+      'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS cache_creation_tokens INTEGER NOT NULL DEFAULT 0',
+    ]) {
+      await this.client.query(col).catch(() => { /* column already exists */ })
+    }
   }
 
   record(entry: UsageEntry): void {
     this.client
       .query(
         `INSERT INTO tokenwatch_usage
-         (model, input_tokens, output_tokens, reasoning_tokens, cost_usd, session_id, user_id, feature, timestamp)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
+          cost_usd, session_id, user_id, feature, timestamp)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [
           entry.model,
           entry.inputTokens,
           entry.outputTokens,
           entry.reasoningTokens ?? 0,
+          entry.cachedTokens ?? 0,
+          entry.cacheCreationTokens ?? 0,
           entry.costUSD,
           entry.sessionId ?? null,
           entry.userId ?? null,
@@ -98,11 +105,15 @@ export class PostgresStorage implements IStorage {
 
 function rowToEntry(r: Record<string, unknown>): UsageEntry {
   const reasoningTokens = (r['reasoning_tokens'] as number | null) ?? 0
+  const cachedTokens = (r['cached_tokens'] as number | null) ?? 0
+  const cacheCreationTokens = (r['cache_creation_tokens'] as number | null) ?? 0
   return {
     model: r['model'] as string,
     inputTokens: r['input_tokens'] as number,
     outputTokens: r['output_tokens'] as number,
     ...(reasoningTokens > 0 && { reasoningTokens }),
+    ...(cachedTokens > 0 && { cachedTokens }),
+    ...(cacheCreationTokens > 0 && { cacheCreationTokens }),
     costUSD: Number(r['cost_usd']),
     ...(r['session_id'] != null && { sessionId: r['session_id'] as string }),
     ...(r['user_id'] != null && { userId: r['user_id'] as string }),

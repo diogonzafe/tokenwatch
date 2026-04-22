@@ -75,11 +75,24 @@ function lookupInMap(model: string, map: PriceMap | undefined): ModelPrice | und
 
 /**
  * Calculate cost in USD given token counts and per-million-token prices.
+ *
+ * - `inputTokens`         — regular (non-cached) input tokens
+ * - `outputTokens`        — output tokens (includes reasoning tokens for OpenAI, which are billed as output)
+ * - `cachedTokens`        — cache-read input tokens (billed at price.cachedInput or full input price if absent)
+ * - `cacheCreationTokens` — cache-creation input tokens, Anthropic only (billed at price.cacheCreationInput
+ *                           or 1.25× input price if absent)
  */
 export function calculateCost(
   inputTokens: number,
   outputTokens: number,
   price: ModelPrice,
+  cachedTokens = 0,
+  cacheCreationTokens = 0,
 ): number {
-  return (inputTokens / 1_000_000) * price.input + (outputTokens / 1_000_000) * price.output
+  const regularInputCost = (inputTokens / 1_000_000) * price.input
+  const cachedReadCost = (cachedTokens / 1_000_000) * (price.cachedInput ?? price.input)
+  const cacheCreationCost =
+    (cacheCreationTokens / 1_000_000) * (price.cacheCreationInput ?? price.input * 1.25)
+  const outputCost = (outputTokens / 1_000_000) * price.output
+  return regularInputCost + cachedReadCost + cacheCreationCost + outputCost
 }

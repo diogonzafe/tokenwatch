@@ -28,27 +28,31 @@ export class MySQLStorage implements IStorage {
   constructor(private readonly client: QueryClient) {}
 
   /** Creates the `tokenwatch_usage` table if it does not already exist.
-   *  Also adds new columns for databases created before v0.2.0. */
+   *  Also adds new columns for databases created before v0.2.0 / v0.3.0. */
   async migrate(): Promise<void> {
     await this.client.execute(`
       CREATE TABLE IF NOT EXISTS tokenwatch_usage (
-        id               BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        model            VARCHAR(255)  NOT NULL,
-        input_tokens     INT           NOT NULL,
-        output_tokens    INT           NOT NULL,
-        reasoning_tokens INT           NOT NULL DEFAULT 0,
-        cost_usd         DECIMAL(18,8) NOT NULL,
-        session_id       VARCHAR(255),
-        user_id          VARCHAR(255),
-        feature          VARCHAR(255),
-        timestamp        DATETIME(3)   NOT NULL
+        id                    BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        model                 VARCHAR(255)  NOT NULL,
+        input_tokens          INT           NOT NULL,
+        output_tokens         INT           NOT NULL,
+        reasoning_tokens      INT           NOT NULL DEFAULT 0,
+        cached_tokens         INT           NOT NULL DEFAULT 0,
+        cache_creation_tokens INT           NOT NULL DEFAULT 0,
+        cost_usd              DECIMAL(18,8) NOT NULL,
+        session_id            VARCHAR(255),
+        user_id               VARCHAR(255),
+        feature               VARCHAR(255),
+        timestamp             DATETIME(3)   NOT NULL
       )
     `)
-    // Incremental migrations for databases created before v0.2.0
+    // Incremental migrations for databases created before v0.2.0 / v0.3.0
     await this.client.execute(`
       ALTER TABLE tokenwatch_usage
-        ADD COLUMN IF NOT EXISTS reasoning_tokens INT NOT NULL DEFAULT 0,
-        ADD COLUMN IF NOT EXISTS feature VARCHAR(255)
+        ADD COLUMN IF NOT EXISTS reasoning_tokens      INT NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS feature               VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS cached_tokens         INT NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS cache_creation_tokens INT NOT NULL DEFAULT 0
     `).catch(() => { /* MySQL < 8.0 may not support IF NOT EXISTS — ignore if columns already exist */ })
   }
 
@@ -56,13 +60,16 @@ export class MySQLStorage implements IStorage {
     this.client
       .execute(
         `INSERT INTO tokenwatch_usage
-         (model, input_tokens, output_tokens, reasoning_tokens, cost_usd, session_id, user_id, feature, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
+          cost_usd, session_id, user_id, feature, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           entry.model,
           entry.inputTokens,
           entry.outputTokens,
           entry.reasoningTokens ?? 0,
+          entry.cachedTokens ?? 0,
+          entry.cacheCreationTokens ?? 0,
           entry.costUSD,
           entry.sessionId ?? null,
           entry.userId ?? null,
@@ -96,11 +103,15 @@ export class MySQLStorage implements IStorage {
 
 function rowToEntry(r: Record<string, unknown>): UsageEntry {
   const reasoningTokens = (r['reasoning_tokens'] as number | null) ?? 0
+  const cachedTokens = (r['cached_tokens'] as number | null) ?? 0
+  const cacheCreationTokens = (r['cache_creation_tokens'] as number | null) ?? 0
   return {
     model: r['model'] as string,
     inputTokens: r['input_tokens'] as number,
     outputTokens: r['output_tokens'] as number,
     ...(reasoningTokens > 0 && { reasoningTokens }),
+    ...(cachedTokens > 0 && { cachedTokens }),
+    ...(cacheCreationTokens > 0 && { cacheCreationTokens }),
     costUSD: Number(r['cost_usd']),
     ...(r['session_id'] != null && { sessionId: r['session_id'] as string }),
     ...(r['user_id'] != null && { userId: r['user_id'] as string }),

@@ -31,6 +31,8 @@ interface MongoDocument {
   inputTokens: number
   outputTokens: number
   reasoningTokens?: number
+  cachedTokens?: number
+  cacheCreationTokens?: number
   costUSD: number
   sessionId?: string | null
   userId?: string | null
@@ -78,6 +80,8 @@ export class MongoStorage implements IStorage {
         inputTokens: entry.inputTokens,
         outputTokens: entry.outputTokens,
         ...(entry.reasoningTokens !== undefined && { reasoningTokens: entry.reasoningTokens }),
+        ...(entry.cachedTokens !== undefined && { cachedTokens: entry.cachedTokens }),
+        ...(entry.cacheCreationTokens !== undefined && { cacheCreationTokens: entry.cacheCreationTokens }),
         costUSD: entry.costUSD,
         sessionId: entry.sessionId ?? null,
         userId: entry.userId ?? null,
@@ -109,6 +113,8 @@ function docToEntry(doc: MongoDocument): UsageEntry {
     inputTokens: doc.inputTokens,
     outputTokens: doc.outputTokens,
     ...(doc.reasoningTokens != null && doc.reasoningTokens > 0 && { reasoningTokens: doc.reasoningTokens }),
+    ...(doc.cachedTokens != null && doc.cachedTokens > 0 && { cachedTokens: doc.cachedTokens }),
+    ...(doc.cacheCreationTokens != null && doc.cacheCreationTokens > 0 && { cacheCreationTokens: doc.cacheCreationTokens }),
     costUSD: doc.costUSD,
     ...(doc.sessionId != null && { sessionId: doc.sessionId }),
     ...(doc.userId != null && { userId: doc.userId }),

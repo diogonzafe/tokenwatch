@@ -107,6 +107,13 @@ async function main() {
       output: round5(outputPerToken * 1_000_000),
     }
 
+    // Prompt caching prices (optional — only present for models that support it)
+    const cachedReadPerToken = entry.cache_read_input_token_cost ?? entry.input_cost_per_token_cache_read ?? null
+    if (cachedReadPerToken) modelEntry.cachedInput = round5(cachedReadPerToken * 1_000_000)
+
+    const cacheCreationPerToken = entry.cache_creation_input_token_cost ?? null
+    if (cacheCreationPerToken) modelEntry.cacheCreationInput = round5(cacheCreationPerToken * 1_000_000)
+
     const maxInputTokens = entry.max_input_tokens ?? entry.max_tokens ?? null
     if (maxInputTokens) modelEntry.maxInputTokens = maxInputTokens
 

@@ -22,7 +22,7 @@ async function cmdSync(): Promise<void> {
   console.log('Fetching latest prices from remote...')
   const result = await fetchRemotePrices()
   if (result) {
-    console.log(`✓ Prices updated. ${Object.keys(result).length} models cached.`)
+    console.log(`✓ Prices updated. ${Object.keys(result.models).length} models cached (updated_at: ${result.updated_at}).`)
   } else {
     console.error('✗ Failed to fetch remote prices. Check your internet connection.')
     process.exit(1)
@@ -76,6 +76,9 @@ async function cmdReport(): Promise<void> {
   console.log(`  Total cost:   $${report.totalCostUSD.toFixed(6)} USD`)
   console.log(`  Total tokens: ${report.totalTokens.input.toLocaleString()} in / ${report.totalTokens.output.toLocaleString()} out`)
   console.log(`  Period:       ${report.period.from}  →  ${report.period.to}`)
+  if (report.pricesUpdatedAt) {
+    console.log(`  Prices as of: ${report.pricesUpdatedAt}`)
+  }
 
   if (Object.keys(report.byModel).length > 0) {
     console.log('\n  By model:')

@@ -5,6 +5,10 @@ import type { Tracker, TrackingMeta } from '../types/index.js'
 interface AnthropicUsage {
   input_tokens?: number
   output_tokens?: number
+  /** Tokens read from prompt cache — billed at ~10% of input price */
+  cache_read_input_tokens?: number
+  /** Tokens written to prompt cache — billed at ~125% of input price */
+  cache_creation_input_tokens?: number
 }
 
 interface ContentBlock {
@@ -70,11 +74,15 @@ function extractMeta(params: Record<string, unknown>): {
 function extractUsage(usage: AnthropicUsage | null | undefined): {
   inputTokens: number
   outputTokens: number
+  cachedTokens: number
+  cacheCreationTokens: number
 } {
-  if (!usage) return { inputTokens: 0, outputTokens: 0 }
+  if (!usage) return { inputTokens: 0, outputTokens: 0, cachedTokens: 0, cacheCreationTokens: 0 }
   return {
     inputTokens: usage.input_tokens ?? 0,
     outputTokens: usage.output_tokens ?? 0,
+    cachedTokens: usage.cache_read_input_tokens ?? 0,
+    cacheCreationTokens: usage.cache_creation_input_tokens ?? 0,
   }
 }
 
@@ -104,6 +112,8 @@ function trackWithMeta(
   sessionId: string | undefined,
   userId: string | undefined,
   feature: string | undefined,
+  cachedTokens = 0,
+  cacheCreationTokens = 0,
 ): void {
   // Anthropic thinking output is already included in outputTokens — no adjustment needed.
   // reasoningTokens here is an approximation (thinking chars ÷ 4) stored purely for
@@ -113,6 +123,8 @@ function trackWithMeta(
     inputTokens,
     outputTokens,
     ...(reasoningTokens > 0 && { reasoningTokens }),
+    ...(cachedTokens > 0 && { cachedTokens }),
+    ...(cacheCreationTokens > 0 && { cacheCreationTokens }),
     ...(sessionId !== undefined && { sessionId }),
     ...(userId !== undefined && { userId }),
     ...(feature !== undefined && { feature }),
@@ -131,6 +143,8 @@ async function* wrapStream(
 ): AsyncGenerator<AnthropicStreamEvent> {
   let inputTokens = 0
   let outputTokens = 0
+  let cachedTokens = 0
+  let cacheCreationTokens = 0
   let currentBlockIsThinking = false
   let thinkingCharCount = 0
 
@@ -139,6 +153,8 @@ async function* wrapStream(
 
     if (event.type === 'message_start' && event.message?.usage) {
       inputTokens = event.message.usage.input_tokens ?? 0
+      cachedTokens = event.message.usage.cache_read_input_tokens ?? 0
+      cacheCreationTokens = event.message.usage.cache_creation_input_tokens ?? 0
     }
     if (event.type === 'message_delta' && event.usage) {
       outputTokens = event.usage.output_tokens ?? 0
@@ -159,7 +175,7 @@ async function* wrapStream(
   // reasoningTokens is approximate and informational — Anthropic thinking output
   // is already included in outputTokens, so it is NOT added to cost by the tracker.
   const reasoningTokens = thinkingCharCount > 0 ? Math.round(thinkingCharCount / 4) : 0
-  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature)
+  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature, cachedTokens, cacheCreationTokens)
 }
 
 // ─── Public wrapper ───────────────────────────────────────────────────────────
@@ -202,7 +218,7 @@ export function wrapAnthropic<T extends AnthropicLike>(
         }
 
         const message = result as AnthropicMessage
-        const { inputTokens, outputTokens } = extractUsage(message.usage)
+        const { inputTokens, outputTokens, cachedTokens, cacheCreationTokens } = extractUsage(message.usage)
         const reasoningTokens = extractThinkingTokenApprox(message.content)
         trackWithMeta(
           tracker,
@@ -213,6 +229,8 @@ export function wrapAnthropic<T extends AnthropicLike>(
           sessionId,
           userId,
           feature,
+          cachedTokens,
+          cacheCreationTokens,
         )
 
         return result
