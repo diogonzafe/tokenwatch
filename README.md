@@ -542,6 +542,34 @@ Budget webhook payload:
 { "text": "[tokenwatch] Budget alert: user \"user_123\" reached $1.0031 USD (threshold: $1)" }
 ```
 
+### Cost anomaly detection
+
+Alert when a single call is anomalously expensive compared to the recent average — catches runaway agents, infinite loops, or abusive usage:
+
+```ts
+const tracker = createTracker({
+  anomalyDetection: {
+    multiplierThreshold: 3,                        // alert if call cost > 3× rolling average
+    webhookUrl: 'https://hooks.slack.com/...',
+    windowHours: 24,                               // lookback window (default: 24h)
+    mode: 'once',                                  // 'once' (default) or 'always'
+  },
+})
+```
+
+Checks two axes independently for each tracked call:
+- **Per-model** — compares the call's cost to the average of all prior calls for that model within `windowHours`
+- **Per-user** — same check scoped to a specific user (only fires when `userId` is present)
+
+No alert fires on the first call for a given model or user (no history = no baseline). Alerts are cleared when `reset()` is called.
+
+Anomaly webhook payload example:
+```json
+{ "text": "[tokenwatch] Anomaly: model \"gpt-4o\" call cost $0.5000 is 4.2x above 24h average ($0.0119)" }
+```
+
+`mode: 'always'` fires on every anomalous call instead of latching after the first.
+
 ---
 
 ## CLI
