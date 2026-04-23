@@ -274,28 +274,6 @@ tracker.getReport({ last: '7d' })
 
 ---
 
-#### 10. Semantic request caching
-Cache responses for semantically similar requests using vector embeddings or a simpler hashing approach. Track hit rate and estimated savings.
-
-**API sketch:**
-```ts
-const tracker = createTracker({
-  cache: {
-    strategy: 'semantic',    // or 'exact'
-    ttlSeconds: 3600,
-    store: 'memory',         // or 'redis'
-    similarityThreshold: 0.95,
-  }
-})
-
-tracker.getReport().cache
-// { hits: 42, misses: 108, savedUSD: 1.87, hitRate: '28%' }
-```
-
-**Impact:** Proven 40-60% cost reduction in production. No simple npm library offers this today.
-
----
-
 ### Priority 3 — Enterprise / Future
 
 #### 11. ~~Cost anomaly detection~~ ✅ Implemented in v0.6.0
@@ -307,22 +285,6 @@ const tracker = createTracker({
     enabled: true,
     multiplierThreshold: 3,   // alert if cost > 3x rolling average
     webhookUrl: '...',
-  }
-})
-```
-
----
-
-#### 12. Cost allocation / chargeback rules
-Define rules to distribute costs between departments or customers. Useful for multi-tenant SaaS with internal showback/chargeback requirements.
-
-```ts
-const tracker = createTracker({
-  costAllocation: {
-    rules: [
-      { match: { userId: /^premium_/ }, chargeRate: 0.80 },  // charge 80% to premium users
-      { match: { feature: 'internal' }, chargeRate: 0 },      // internal calls are free
-    ]
   }
 })
 ```
@@ -354,9 +316,7 @@ npx tokenwatch dashboard --port 8080
 | 7 | Cheaper model suggestions | Low | Medium | No | ✅ v0.4.0 |
 | 8 | LangChain callback handler | Medium | High | No | ✅ v0.4.0 |
 | 9 | Time-filtered reports | Low | Medium | No | ✅ v0.3.0 |
-| 10 | Semantic caching | High | High | No | |
 | 11 | Anomaly detection | High | Medium | No | ✅ v0.6.0 |
-| 12 | Cost allocation rules | High | Low | No | |
 | 13 | Local web dashboard | High | High | Partial | ✅ v0.5.0 |
 | 14 | Embeddings support in `wrapOpenAI` | Low | High | No | ✅ v0.2.0 |
 | 15 | Agent framework integration guide | Low | High | No | ✅ v0.2.1 |
