@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { fetchRemotePrices } from '../src/core/sync.js'
 import { SqliteStorage } from '../src/core/storage.js'
 import { createTracker } from '../src/core/tracker.js'
+import { startDashboardServer } from '../src/dashboard/server.js'
 import type { PricesFile } from '../src/types/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -111,21 +112,40 @@ async function cmdReport(): Promise<void> {
   console.log('───────────────────────────────────────────────────\n')
 }
 
+async function cmdDashboard(port: number): Promise<void> {
+  if (!existsSync(DB_PATH)) {
+    console.log(`No SQLite database found at ${DB_PATH}`)
+    console.log("Start your app with storage: 'sqlite' to begin recording usage.")
+    process.exit(1)
+  }
+
+  let storage: SqliteStorage
+  try {
+    storage = new SqliteStorage(DB_PATH)
+  } catch {
+    console.error('Failed to open SQLite database. Is better-sqlite3 installed?')
+    console.error('Run: npm install better-sqlite3')
+    process.exit(1)
+  }
+
+  startDashboardServer(storage, port)
+}
+
 function cmdHelp(): void {
   console.log(`
 tokenwatch — CLI
 
 Commands:
-  sync      Fetch and cache latest model prices from remote
-  prices    List all bundled models and their current prices
-  report    Show last saved usage report (requires SQLite storage)
-  help      Show this help message
+  sync                  Fetch and cache latest model prices from remote
+  prices                List all bundled models and their current prices
+  report                Show last saved usage report (requires SQLite storage)
+  dashboard [--port N]  Open local web dashboard (default port: 4242)
+  help                  Show this help message
 `.trim())
 }
 
 async function main(): Promise<void> {
   const [, , cmd, ...args] = process.argv
-  void args
 
   switch (cmd) {
     case 'sync':
@@ -137,6 +157,12 @@ async function main(): Promise<void> {
     case 'report':
       await cmdReport()
       break
+    case 'dashboard': {
+      const portFlagIdx = args.indexOf('--port')
+      const port = portFlagIdx !== -1 ? parseInt(args[portFlagIdx + 1] ?? '4242', 10) : 4242
+      await cmdDashboard(port)
+      break
+    }
     case 'help':
     case undefined:
       cmdHelp()

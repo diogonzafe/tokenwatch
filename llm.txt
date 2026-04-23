@@ -191,12 +191,14 @@ deepseek-reasoner: { input: 0.28,  output: 0.42,  maxInputTokens: 131072 }
 
 ## File structure
 src/
-  types/index.ts          — all exported types (IStorage, Tracker, TrackerConfig, UsageEntry, Report, ReportOptions, CostForecast, ForecastOptions, BudgetConfig, etc.)
+  types/index.ts          — all exported types (IStorage, Tracker, LazyTracker, TrackerConfig, UsageEntry, Report, ReportOptions, CostForecast, ForecastOptions, BudgetConfig, etc.)
   core/
     pricing.ts            — resolvePrice(model, layers), calculateCost(inputTokens, outputTokens, price, cachedTokens?, cacheCreationTokens?)
     sync.ts               — getRemotePrices(), fetchRemotePrices(url?), loadCachedPrices() → PricesResult | null; PricesResult = { models: PriceMap, updated_at: string }
     storage.ts            — MemoryStorage, SqliteStorage, createStorage(type)
     tracker.ts            — createTracker(config) — main entrypoint
+    suggestions.ts        — maybeSuggestCheaperModel(model, costUSD, inputTokens, outputTokens, layers)
+    lazy-tracker.ts       — createLazyTracker() — no-op singleton until init() called
   providers/
     openai.ts             — wrapOpenAI
     anthropic.ts          — wrapAnthropic
@@ -207,18 +209,36 @@ src/
     mysql.ts              — MySQLStorage (mysql2)
     mongodb.ts            — MongoStorage (mongodb)
     index.ts              — barrel export
+  langchain/
+    handler.ts            — TokenwatchCallbackHandler (local stub types, no @langchain/core compile-time dep)
+    index.ts              — barrel export for @diogonzafe/tokenwatch/langchain sub-path
+  dashboard/
+    data.ts               — getDashboardData(storage, filter?), buildTimeSeries(entries, sinceMs), parseSince(filter), getFingerprint(data)
+    server.ts             — startDashboardServer(storage, port) — node:http SSE server
+    html.ts               — getHtml(port) → full dark-theme HTML string with Chart.js from CDN
   index.ts                — public exports
-bin/cli.ts                — CLI: sync | prices | report (reads ~/.tokenwatch/usage.db) | help
+bin/cli.ts                — CLI: sync | prices | report | dashboard | help
 prices.json               — bundled pricing data (200+ models, updated daily)
 scripts/scrape-prices.mjs — fetches LiteLLM JSON, run by GitHub Action
 .github/workflows/sync-prices.yml — daily price sync (commits prices.json; npm publish is manual, code changes only)
 
 ## CLI
-tokenwatch sync     — fetch and cache remote prices
-tokenwatch prices   — list bundled models and prices
-tokenwatch report   — read ~/.tokenwatch/usage.db and print cost breakdown (total, by model, by user, by session, by feature)
-                      shows "No SQLite database found" if db doesn't exist, "No usage recorded yet" if empty
-tokenwatch help     — help
+tokenwatch sync                  — fetch and cache remote prices
+tokenwatch prices                — list bundled models and prices
+tokenwatch report                — read ~/.tokenwatch/usage.db and print cost breakdown (total, by model, by user, by session, by feature)
+                                   shows "No SQLite database found" if db doesn't exist, "No usage recorded yet" if empty
+tokenwatch dashboard             — spin up local web dashboard at http://localhost:4242 (requires SQLite storage)
+tokenwatch dashboard --port N    — use custom port
+tokenwatch help                  — help
+
+## Dashboard
+tokenwatch dashboard opens a dark-themed real-time web UI reading from ~/.tokenwatch/usage.db.
+Sections: overview cards (total cost, tokens, calls, burn rate/hr), cost over time line chart, model doughnut chart + breakdown table, by-user and by-feature collapsible tables, cost forecast (projected daily/monthly).
+Time filter tabs: 1h | 24h | 7d | 30d | All — switch without page reload via SSE reconnect.
+SSE: server polls storage every 3s, sends data only when fingerprint changes (totalCostUSD + totalTokens.input + timeSeries.length).
+Bucket intervals: 1h filter → 5-min buckets, 24h → 1h buckets, 7d/30d/all → 1-day buckets.
+Zero new runtime dependencies: node:http only. Chart.js v4 from CDN (jsdelivr).
+Port conflict: EADDRINUSE → helpful message + process.exit(1).
 
 ## Config validation
 zod schema validates TrackerConfig at createTracker() call time.

@@ -547,13 +547,17 @@ Budget webhook payload:
 ## CLI
 
 ```bash
-npx tokenwatch sync     # force update cached prices from remote
-npx tokenwatch prices   # list all models and current prices
-npx tokenwatch report   # show usage report from ~/.tokenwatch/usage.db
-npx tokenwatch help     # show help
+npx tokenwatch sync              # force update cached prices from remote
+npx tokenwatch prices            # list all models and current prices
+npx tokenwatch report            # show usage report from ~/.tokenwatch/usage.db
+npx tokenwatch dashboard         # open local web dashboard (default port: 4242)
+npx tokenwatch dashboard --port 8080
+npx tokenwatch help              # show help
 ```
 
-`tokenwatch report` reads the local SQLite database and prints:
+### `tokenwatch report`
+
+Reads the local SQLite database and prints:
 
 ```
 ── tokenwatch report ──────────────────────────────
@@ -574,7 +578,18 @@ npx tokenwatch help     # show help
 ───────────────────────────────────────────────────
 ```
 
-Requires `storage: 'sqlite'` in your app and `better-sqlite3` installed.
+### `tokenwatch dashboard`
+
+Spins up a local web server and opens a dark-themed dashboard with real-time cost data:
+
+- **Overview cards** — total cost, tokens, calls, burn rate per hour
+- **Cost over time** — line chart bucketed by time (5min / 1h / 1day depending on filter)
+- **Model breakdown** — doughnut chart + table with cost share per model
+- **By user / feature** — collapsible tables, hidden when empty
+- **Cost forecast** — projected daily and monthly spend based on recent burn rate
+- **Time filter tabs** — 1h | 24h | 7d | 30d | All; updates chart and tables in real-time via SSE
+
+Data updates automatically every 3 seconds without refreshing the page. Requires `storage: 'sqlite'` in your app and `better-sqlite3` installed. Zero external dependencies — pure Node.js HTTP server with Chart.js loaded from CDN.
 
 ---
 

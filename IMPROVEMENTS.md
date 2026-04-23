@@ -329,7 +329,7 @@ const tracker = createTracker({
 
 ---
 
-#### 13. Local web dashboard (`tokenwatch dashboard`)
+#### 13. ~~Local web dashboard (`tokenwatch dashboard`)~~ ✅ Implemented in v0.5.0
 A CLI command that spins up a local Express/HTTP server rendering a simple HTML dashboard with charts for cost over time, top models, top users. No cloud, no SaaS, no account.
 
 ```bash
@@ -357,7 +357,7 @@ npx tokenwatch dashboard --port 8080
 | 10 | Semantic caching | High | High | No | |
 | 11 | Anomaly detection | High | Medium | No | |
 | 12 | Cost allocation rules | High | Low | No | |
-| 13 | Local web dashboard | High | High | Partial | |
+| 13 | Local web dashboard | High | High | Partial | ✅ v0.5.0 |
 | 14 | Embeddings support in `wrapOpenAI` | Low | High | No | ✅ v0.2.0 |
 | 15 | Agent framework integration guide | Low | High | No | ✅ v0.2.1 |
 | 16 | Lazy / singleton init pattern | Low | Medium | No | ✅ v0.4.0 |
