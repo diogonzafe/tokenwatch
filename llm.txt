@@ -7,7 +7,7 @@ Transparent TypeScript wrapper that intercepts LLM API calls (OpenAI, Anthropic,
 - npm: @diogonzafe/tokenwatch
 - Node 20+, TypeScript 5.x, ESM + CJS dual build
 - One runtime dependency: zod (config validation)
-- Peer deps (all optional): openai, @anthropic-ai/sdk, @google/generative-ai, better-sqlite3, pg, mysql2, mongodb
+- Peer deps (all optional): openai, @anthropic-ai/sdk, @google/generative-ai, better-sqlite3, pg, mysql2, mongodb, @opentelemetry/api
 
 ## Public API
 
@@ -24,6 +24,23 @@ Config fields (all optional):
     perSession?: BudgetConfig,    — alert when a single session's total spend crosses threshold
   }
 - suggestions: boolean            — log a hint after each call if a cheaper model in the same family has >50% savings (default false)
+- anomalyDetection?: AnomalyDetectionConfig  — alert when a call is Nx above per-user/per-model rolling average
+- exporter?: IExporter           — custom export hook called for every tracked entry (e.g. OTelExporter)
+
+### AnomalyDetectionConfig
+{ multiplierThreshold: number, webhookUrl: string, windowHours?: number, mode?: 'once' | 'always' }
+- multiplierThreshold: fire alert when call cost > multiplierThreshold × rolling average (e.g. 3 = 3x above average)
+- webhookUrl: Slack/Discord webhook to POST to
+- windowHours: lookback window for baseline average (default 24)
+- mode 'once' (default): fire once per entity (model or user) until reset(); mode 'always': fire on every anomalous call
+- Checks two axes independently: per-user (if userId present) and per-model
+- Minimum 1 prior call required — no alert on first call for a given entity
+- Alert message format: "[tokenwatch] Anomaly: model "gpt-4o" call cost $X is Y.Zx above 24h average ($W)"
+
+### IExporter interface
+{ export(entry: UsageEntry): void | Promise<void> }
+- Called synchronously after each storage.record() — fire-and-forget (errors never propagate to track() caller)
+- Implement this interface to push entries to any custom sink (OTel, Datadog, custom DB, etc.)
 
 ### BudgetConfig
 { threshold: number, webhookUrl: string, mode?: 'once' | 'always' }
@@ -189,9 +206,23 @@ gemini-2.5-flash:  { input: 0.30,  output: 2.50,  maxInputTokens: 1048576 }
 deepseek-chat:     { input: 0.28,  output: 0.42,  maxInputTokens: 131072 }
 deepseek-reasoner: { input: 0.28,  output: 0.42,  maxInputTokens: 131072 }
 
+## OpenTelemetry Exporter (import from @diogonzafe/tokenwatch/exporters)
+
+### OTelExporter
+- Peer dep: @opentelemetry/api >= 1.0.0 (optional; throws helpful error if not installed)
+- Constructor: new OTelExporter(options?: OTelExporterOptions)
+- OTelExporterOptions: { meterName?: string }  — default: 'tokenwatch'
+- Requires a MeterProvider registered globally via the OTel SDK before instantiation
+- Emits four instruments per tracked call:
+    tokenwatch.calls         — Counter (+1)       attrs: model, session.id?, user.id?, feature?
+    tokenwatch.input_tokens  — Counter (+inputTokens+cachedTokens+cacheCreationTokens)
+    tokenwatch.output_tokens — Counter (+outputTokens)
+    tokenwatch.cost_usd      — Histogram (costUSD, unit: USD)
+- Usage: createTracker({ exporter: new OTelExporter() })
+
 ## File structure
 src/
-  types/index.ts          — all exported types (IStorage, Tracker, LazyTracker, TrackerConfig, UsageEntry, Report, ReportOptions, CostForecast, ForecastOptions, BudgetConfig, etc.)
+  types/index.ts          — all exported types (IStorage, IExporter, Tracker, LazyTracker, TrackerConfig, UsageEntry, Report, ReportOptions, CostForecast, ForecastOptions, BudgetConfig, AnomalyDetectionConfig, etc.)
   core/
     pricing.ts            — resolvePrice(model, layers), calculateCost(inputTokens, outputTokens, price, cachedTokens?, cacheCreationTokens?)
     sync.ts               — getRemotePrices(), fetchRemotePrices(url?), loadCachedPrices() → PricesResult | null; PricesResult = { models: PriceMap, updated_at: string }
@@ -212,6 +243,9 @@ src/
   langchain/
     handler.ts            — TokenwatchCallbackHandler (local stub types, no @langchain/core compile-time dep)
     index.ts              — barrel export for @diogonzafe/tokenwatch/langchain sub-path
+  exporters/
+    otel.ts               — OTelExporter (local OTel type stubs, no @opentelemetry/api compile-time dep)
+    index.ts              — barrel export for @diogonzafe/tokenwatch/exporters sub-path
   dashboard/
     data.ts               — getDashboardData(storage, filter?), buildTimeSeries(entries, sinceMs), parseSince(filter), getFingerprint(data)
     server.ts             — startDashboardServer(storage, port) — node:http SSE server

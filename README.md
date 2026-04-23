@@ -593,6 +593,89 @@ Data updates automatically every 3 seconds without refreshing the page. Requires
 
 ---
 
+## Production Usage
+
+### Storage choice
+
+| Setup | Recommended storage |
+|---|---|
+| Single process (monolith, lambda, single pod) | `'sqlite'` — zero config, persists across restarts |
+| Multi-instance (Kubernetes, PaaS with ≥2 pods) | `PostgresStorage` / `MySQLStorage` / `MongoStorage` — shared, unified data |
+| Ephemeral / testing | `'memory'` (default) — resets on restart |
+
+### CI / test environments
+
+Disable network calls and staleness warnings in CI:
+
+```ts
+const tracker = createTracker({
+  syncPrices: false,          // skip remote price fetch — use bundled prices
+  warnIfStaleAfterHours: 0,   // suppress staleness warning
+})
+```
+
+### On-prem / air-gapped deployments
+
+The daily GitHub Actions workflow updates `prices.json` and publishes a new npm package. Teams that cannot reach GitHub at runtime have two options:
+
+1. **Pin and vendor** — copy `prices.json` from the installed package into your repo and commit it. Pass overrides via `customPrices` for any new models.
+2. **Self-host the sync** — fork the `scripts/scrape-prices.mjs` script and run it on your own schedule, pointing to your internal registry.
+
+Either way, set `syncPrices: false` so the library doesn't try to fetch from GitHub at runtime.
+
+### Anomaly detection in production
+
+Enable `anomalyDetection` to catch runaway agents or abuse early:
+
+```ts
+const tracker = createTracker({
+  storage: new PostgresStorage(pool),
+  anomalyDetection: {
+    multiplierThreshold: 3,                       // alert if a call costs 3x above the rolling average
+    webhookUrl: 'https://hooks.slack.com/...',
+    windowHours: 24,                              // baseline window (default: 24h)
+  },
+})
+```
+
+---
+
+## OpenTelemetry Exporter
+
+Push tracked usage as metrics to any OTel-compatible backend (Datadog, Honeycomb, Grafana, New Relic, etc.) without changing your existing instrumentation:
+
+```bash
+npm install @opentelemetry/api
+```
+
+```ts
+import { createTracker } from '@diogonzafe/tokenwatch'
+import { OTelExporter } from '@diogonzafe/tokenwatch/exporters'
+
+const tracker = createTracker({
+  exporter: new OTelExporter(),   // uses the globally-registered MeterProvider
+})
+```
+
+Four metrics are emitted per call, all with `model`, `session.id`, `user.id`, and `feature` attributes (optional fields omitted when absent):
+
+| Metric | Type | Description |
+|---|---|---|
+| `tokenwatch.calls` | Counter | Number of LLM API calls |
+| `tokenwatch.input_tokens` | Counter | Input tokens (includes cached + cache-creation) |
+| `tokenwatch.output_tokens` | Counter | Output tokens |
+| `tokenwatch.cost_usd` | Histogram | Cost per call in USD |
+
+You must configure a `MeterProvider` before creating the exporter (e.g. using the OpenTelemetry SDK). `OTelExporter` has no compile-time dependency on `@opentelemetry/api` — it resolves it at runtime and throws a helpful error if the package is not installed.
+
+Custom meter name:
+
+```ts
+new OTelExporter({ meterName: 'my-service' })
+```
+
+---
+
 ## Privacy & Security
 
 - Prompt and response **content is never read or stored** — only token counts and model names

@@ -9,6 +9,7 @@ const sharedExternal = [
   'mysql2',
   'mongodb',
   '@langchain/core',
+  '@opentelemetry/api',
 ]
 
 export default defineConfig([
@@ -18,6 +19,7 @@ export default defineConfig([
       index: 'src/index.ts',
       adapters: 'src/adapters/index.ts',
       langchain: 'src/langchain/index.ts',
+      exporters: 'src/exporters/index.ts',
     },
     format: ['esm', 'cjs'],
     dts: true,

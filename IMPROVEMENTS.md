@@ -209,7 +209,7 @@ export function getTracker(): Tracker {
 
 ---
 
-#### 6. OpenTelemetry exporter
+#### 6. ~~OpenTelemetry exporter~~ ✅ Implemented in v0.6.0
 An optional export adapter that emits spans to any OTel backend (Datadog, Honeycomb, Grafana, New Relic). The library stays fully standalone but integrates into existing enterprise APM stacks.
 
 **API sketch:**
@@ -298,7 +298,7 @@ tracker.getReport().cache
 
 ### Priority 3 — Enterprise / Future
 
-#### 11. Cost anomaly detection
+#### 11. ~~Cost anomaly detection~~ ✅ Implemented in v0.6.0
 Alert when a user or model spends 3x above their historical average — useful for detecting infinite loops, buggy agents, or abuse.
 
 ```ts
@@ -350,12 +350,12 @@ npx tokenwatch dashboard --port 8080
 | 3 | Per-user/session budgets | Medium | High | Yes | ✅ v0.3.0 |
 | 4 | Cost forecast | Low | High | Yes | ✅ v0.3.0 |
 | 5 | Feature tagging (`__feature`) | Low | High | Yes | ✅ v0.2.0 |
-| 6 | OpenTelemetry exporter | Medium | Medium | No | |
+| 6 | OpenTelemetry exporter | Medium | Medium | No | ✅ v0.6.0 |
 | 7 | Cheaper model suggestions | Low | Medium | No | ✅ v0.4.0 |
 | 8 | LangChain callback handler | Medium | High | No | ✅ v0.4.0 |
 | 9 | Time-filtered reports | Low | Medium | No | ✅ v0.3.0 |
 | 10 | Semantic caching | High | High | No | |
-| 11 | Anomaly detection | High | Medium | No | |
+| 11 | Anomaly detection | High | Medium | No | ✅ v0.6.0 |
 | 12 | Cost allocation rules | High | Low | No | |
 | 13 | Local web dashboard | High | High | Partial | ✅ v0.5.0 |
 | 14 | Embeddings support in `wrapOpenAI` | Low | High | No | ✅ v0.2.0 |
@@ -420,7 +420,7 @@ const tracker = createTracker({
 
 ---
 
-### G4. Security and privacy documentation section
+### G4. ~~Security and privacy documentation section~~ ✅ Done
 
 There is no explicit statement in the README about what data tokenwatch does and does not capture. Security-conscious teams (and enterprise buyers) will reject an un-audited library without this.
 
@@ -434,7 +434,7 @@ There is no explicit statement in the README about what data tokenwatch does and
 
 ---
 
-### G5. Production readiness guidance
+### ~~G5. Production readiness guidance~~ ✅ Implemented in v0.6.0
 
 The documentation currently focuses on quick-start usage but gives no guidance on production deployment patterns.
 
@@ -452,7 +452,7 @@ The documentation currently focuses on quick-start usage but gives no guidance o
 | G2 | Price staleness warnings | Low | High | High | ✅ v0.3.0 |
 | G3 | Postgres / pluggable storage | High | High | Medium | ✅ v0.2.0 |
 | G4 | Privacy & security README section | Low | High | Immediate | ✅ done |
-| G5 | Production readiness docs | Low | Medium | High | |
+| G5 | Production readiness docs | Low | Medium | High | ✅ v0.6.0 |
 
 ---
 

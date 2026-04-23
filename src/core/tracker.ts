@@ -15,6 +15,7 @@ import type {
   PriceMap,
   IStorage,
   BudgetConfig,
+  IExporter,
 } from '../types/index.js'
 import { resolvePrice, findPrice, calculateCost } from './pricing.js'
 import { maybeSuggestCheaperModel } from './suggestions.js'
@@ -63,6 +64,17 @@ const TrackerConfigSchema = z.object({
     perSession: BudgetConfigSchema.optional(),
   }).optional(),
   suggestions: z.boolean().optional().default(false),
+  anomalyDetection: z.object({
+    multiplierThreshold: z.number().positive(),
+    webhookUrl: z.string().url(),
+    windowHours: z.number().positive().optional().default(24),
+    mode: z.enum(['once', 'always']).optional().default('once'),
+  }).optional(),
+  exporter: z.custom<IExporter>((v) => (
+    v !== null &&
+    typeof v === 'object' &&
+    typeof (v as IExporter).export === 'function'
+  )).optional(),
 })
 
 export function createTracker(config: TrackerConfig = {}): Tracker {
@@ -81,6 +93,8 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     warnIfStaleAfterHours,
     budgets,
     suggestions,
+    anomalyDetection,
+    exporter,
   } = parsed.data
 
   const storage: IStorage =
@@ -128,6 +142,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
   let alertFired = false
   const firedUserAlerts = new Set<string>()
   const firedSessionAlerts = new Set<string>()
+  const firedAnomalyKeys = new Set<string>()
   const startedAt = new Date().toISOString()
 
   function resolveModelPrice(model: string) {
@@ -154,7 +169,11 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       timestamp: new Date().toISOString(),
     }
     storage.record(full)
+    if (exporter) {
+      Promise.resolve(exporter.export(full)).catch(() => { /* fire-and-forget */ })
+    }
     maybeFireAlerts(full)
+    if (anomalyDetection) maybeDetectAnomaly(full)
     if (suggestions) {
       maybeSuggestCheaperModel(entry.model, costUSD, entry.inputTokens, entry.outputTokens, {
         bundledPrices,
@@ -361,11 +380,62 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     }
   }
 
+  function maybeDetectAnomaly(entry: UsageEntry): void {
+    if (entry.costUSD <= 0) return
+    const { multiplierThreshold, webhookUrl: aUrl, windowHours: wh, mode: modeRaw } = anomalyDetection!
+    const wHours = wh ?? 24
+    const mode = modeRaw ?? 'once'
+    const windowStart = Date.now() - wHours * 60 * 60 * 1000
+    const entryTs = new Date(entry.timestamp).getTime()
+
+    function checkEntity(key: string, label: string, predicate: (e: UsageEntry) => boolean): void {
+      if (mode !== 'always' && firedAnomalyKeys.has(key)) return
+      if (mode !== 'always') firedAnomalyKeys.add(key)
+      Promise.resolve(storage.getAll()).then((all) => {
+        const history = all.filter(
+          (e) =>
+            predicate(e) &&
+            new Date(e.timestamp).getTime() >= windowStart &&
+            new Date(e.timestamp).getTime() !== entryTs,
+        )
+        if (history.length === 0) {
+          if (mode !== 'always') firedAnomalyKeys.delete(key)
+          return
+        }
+        const avg = history.reduce((s, e) => s + e.costUSD, 0) / history.length
+        if (avg <= 0 || entry.costUSD <= avg * multiplierThreshold) {
+          if (mode !== 'always') firedAnomalyKeys.delete(key)
+          return
+        }
+        const multiple = (entry.costUSD / avg).toFixed(1)
+        fireWebhook(aUrl, {
+          text: `[tokenwatch] Anomaly: ${label} call cost $${entry.costUSD.toFixed(4)} is ${multiple}x above ${wHours}h average ($${avg.toFixed(4)})`,
+        })
+      }).catch(() => {
+        if (mode !== 'always') firedAnomalyKeys.delete(key)
+      })
+    }
+
+    if (entry.userId) {
+      checkEntity(
+        `user:${entry.userId}`,
+        `user "${entry.userId}"`,
+        (e) => e.userId === entry.userId,
+      )
+    }
+    checkEntity(
+      `model:${entry.model}`,
+      `model "${entry.model}"`,
+      (e) => e.model === entry.model,
+    )
+  }
+
   async function reset(): Promise<void> {
     await Promise.resolve(storage.clearAll())
     alertFired = false
     firedUserAlerts.clear()
     firedSessionAlerts.clear()
+    firedAnomalyKeys.clear()
   }
 
   async function resetSession(sessionId: string): Promise<void> {

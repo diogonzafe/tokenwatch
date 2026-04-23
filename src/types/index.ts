@@ -32,6 +32,22 @@ export interface BudgetConfig {
   mode?: 'once' | 'always'
 }
 
+export interface AnomalyDetectionConfig {
+  /** Alert when a call's cost exceeds this multiple of the rolling per-entity average (e.g. 3 = 3×) */
+  multiplierThreshold: number
+  /** Discord / Slack / generic webhook URL */
+  webhookUrl: string
+  /** Hours of history to use as the baseline window (default: 24) */
+  windowHours?: number
+  /** 'once' (default) — fire once per entity; 'always' — fire on every anomalous call */
+  mode?: 'once' | 'always'
+}
+
+export interface IExporter {
+  /** Called after every successful track() — fire-and-forget, errors are swallowed */
+  export(entry: UsageEntry): void | Promise<void>
+}
+
 export interface TrackerConfig {
   /** 'memory' (default), 'sqlite', or a custom IStorage instance (e.g. PostgresStorage, MySQLStorage, MongoStorage) */
   storage?: 'memory' | 'sqlite' | IStorage
@@ -52,6 +68,10 @@ export interface TrackerConfig {
   }
   /** Log a hint after each call suggesting a cheaper model in the same family when savings > 50% */
   suggestions?: boolean
+  /** Alert via webhook when a call's cost is Nx above the rolling average for that user or model */
+  anomalyDetection?: AnomalyDetectionConfig
+  /** Custom exporter called after every tracked call (e.g. OTelExporter) */
+  exporter?: IExporter
 }
 
 // ─── Usage / storage entries ──────────────────────────────────────────────────

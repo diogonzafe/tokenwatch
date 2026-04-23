@@ -22,6 +22,8 @@ export type {
   PriceMap,
   PricesFile,
   IStorage,
+  IExporter,
   TrackingMeta,
   BudgetConfig,
+  AnomalyDetectionConfig,
 } from './types/index.js'
