@@ -7,10 +7,115 @@ import { fetchRemotePrices } from '../src/core/sync.js'
 import { SqliteStorage } from '../src/core/storage.js'
 import { createTracker } from '../src/core/tracker.js'
 import { startDashboardServer } from '../src/dashboard/server.js'
-import type { PricesFile } from '../src/types/index.js'
+import type { IStorage, PricesFile } from '../src/types/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const DB_PATH = join(homedir(), '.tokenwatch', 'usage.db')
+const DEFAULT_DB_PATH = join(homedir(), '.tokenwatch', 'usage.db')
+
+// ─── Arg helpers ──────────────────────────────────────────────────────────────
+
+function getFlag(args: string[], flag: string): string | undefined {
+  const idx = args.indexOf(flag)
+  return idx !== -1 ? (args[idx + 1] ?? undefined) : undefined
+}
+
+// ─── Storage factory ──────────────────────────────────────────────────────────
+
+// Local interface stubs — avoids compile-time deps on optional peer packages.
+// Same pattern used in src/exporters/otel.ts for @opentelemetry/api.
+interface PgPoolLike { end(): Promise<void> }
+interface MysqlPoolLike { end(): Promise<void> }
+interface MongoClientLike { connect(): Promise<void>; close(): Promise<void>; db(name?: string): unknown }
+
+interface StorageHandle {
+  storage: IStorage
+  close: () => Promise<void>
+}
+
+async function openStorage(dbUrl: string | undefined): Promise<StorageHandle> {
+  // ── Default: SQLite ──────────────────────────────────────────────────────
+  if (!dbUrl) {
+    if (!existsSync(DEFAULT_DB_PATH)) {
+      console.error(`No SQLite database found at ${DEFAULT_DB_PATH}`)
+      console.error("Start your app with storage: 'sqlite' to begin recording usage.")
+      console.error('Or pass --db <url> to connect to Postgres, MySQL, or MongoDB.')
+      process.exit(1)
+    }
+    let storage: SqliteStorage
+    try {
+      storage = new SqliteStorage(DEFAULT_DB_PATH)
+    } catch {
+      console.error('Failed to open SQLite database. Is better-sqlite3 installed?')
+      console.error('Run: npm install better-sqlite3')
+      process.exit(1)
+    }
+    return { storage, close: async () => {} }
+  }
+
+  // ── Postgres ─────────────────────────────────────────────────────────────
+  if (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let pgMod: any
+    try {
+      pgMod = (await import('pg' as string)).default
+    } catch {
+      console.error('[tokenwatch] Postgres requires the pg package.')
+      console.error('Run: npm install pg')
+      process.exit(1)
+    }
+    const { PostgresStorage } = await import('../src/adapters/postgres.js')
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const pool = new pgMod.Pool({ connectionString: dbUrl }) as PgPoolLike
+    const storage = new PostgresStorage(pool as never)
+    return { storage, close: () => pool.end() }
+  }
+
+  // ── MySQL ─────────────────────────────────────────────────────────────────
+  if (dbUrl.startsWith('mysql://')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mysqlMod: any
+    try {
+      mysqlMod = await import('mysql2/promise' as string)
+    } catch {
+      console.error('[tokenwatch] MySQL requires the mysql2 package.')
+      console.error('Run: npm install mysql2')
+      process.exit(1)
+    }
+    const { MySQLStorage } = await import('../src/adapters/mysql.js')
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const pool = mysqlMod.createPool(dbUrl) as MysqlPoolLike
+    const storage = new MySQLStorage(pool as never)
+    return { storage, close: () => pool.end() }
+  }
+
+  // ── MongoDB ───────────────────────────────────────────────────────────────
+  if (dbUrl.startsWith('mongodb://') || dbUrl.startsWith('mongodb+srv://')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mongoMod: any
+    try {
+      mongoMod = await import('mongodb' as string)
+    } catch {
+      console.error('[tokenwatch] MongoDB requires the mongodb package.')
+      console.error('Run: npm install mongodb')
+      process.exit(1)
+    }
+    const { MongoStorage } = await import('../src/adapters/mongodb.js')
+    const urlObj = new URL(dbUrl)
+    const dbName = urlObj.pathname.replace(/^\//, '') || 'tokenwatch'
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const client = new mongoMod.MongoClient(dbUrl) as MongoClientLike
+    await client.connect()
+    const db = client.db(dbName)
+    const storage = new MongoStorage(db as never)
+    return { storage, close: () => client.close() }
+  }
+
+  console.error(`[tokenwatch] Unsupported database URL: "${dbUrl}"`)
+  console.error('Supported protocols: postgres://, mysql://, mongodb://, mongodb+srv://')
+  process.exit(1)
+}
+
+// ─── Commands ─────────────────────────────────────────────────────────────────
 
 function loadBundledPrices(): PricesFile['models'] {
   const pricesPath = join(__dirname, '..', 'prices.json')
@@ -49,24 +154,13 @@ function cmdPrices(): void {
   }
 }
 
-async function cmdReport(): Promise<void> {
-  if (!existsSync(DB_PATH)) {
-    console.log(`No SQLite database found at ${DB_PATH}`)
-    console.log('Start your app with storage: \'sqlite\' to begin recording usage.')
-    return
-  }
-
-  let storage: SqliteStorage
-  try {
-    storage = new SqliteStorage(DB_PATH)
-  } catch {
-    console.error('Failed to open SQLite database. Is better-sqlite3 installed?')
-    console.error('Run: npm install better-sqlite3')
-    process.exit(1)
-  }
+async function cmdReport(args: string[]): Promise<void> {
+  const dbUrl = getFlag(args, '--db')
+  const { storage, close } = await openStorage(dbUrl)
 
   const tracker = createTracker({ storage, syncPrices: false })
   const report = await tracker.getReport()
+  await close()
 
   if (report.totalCostUSD === 0 && Object.keys(report.byModel).length === 0) {
     console.log('No usage recorded yet.')
@@ -112,21 +206,17 @@ async function cmdReport(): Promise<void> {
   console.log('───────────────────────────────────────────────────\n')
 }
 
-async function cmdDashboard(port: number): Promise<void> {
-  if (!existsSync(DB_PATH)) {
-    console.log(`No SQLite database found at ${DB_PATH}`)
-    console.log("Start your app with storage: 'sqlite' to begin recording usage.")
-    process.exit(1)
-  }
+async function cmdDashboard(args: string[]): Promise<void> {
+  const portFlag = getFlag(args, '--port')
+  const port = portFlag !== undefined ? parseInt(portFlag, 10) : 4242
+  const dbUrl = getFlag(args, '--db')
 
-  let storage: SqliteStorage
-  try {
-    storage = new SqliteStorage(DB_PATH)
-  } catch {
-    console.error('Failed to open SQLite database. Is better-sqlite3 installed?')
-    console.error('Run: npm install better-sqlite3')
-    process.exit(1)
-  }
+  const { storage, close } = await openStorage(dbUrl)
+
+  // Graceful shutdown — close DB connection when the process exits
+  const shutdown = (): void => { void close().then(() => process.exit(0)) }
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
 
   startDashboardServer(storage, port)
 }
@@ -136,13 +226,27 @@ function cmdHelp(): void {
 tokenwatch — CLI
 
 Commands:
-  sync                  Fetch and cache latest model prices from remote
-  prices                List all bundled models and their current prices
-  report                Show last saved usage report (requires SQLite storage)
-  dashboard [--port N]  Open local web dashboard (default port: 4242)
-  help                  Show this help message
+  sync                        Fetch and cache latest model prices from remote
+  prices                      List all bundled models and their current prices
+  report [--db <url>]         Show usage report (default: SQLite at ~/.tokenwatch/usage.db)
+  dashboard [--port N]        Open local web dashboard (default port: 4242)
+            [--db <url>]      Connect to a database instead of the default SQLite
+
+Database URL formats:
+  (none)                      ~/.tokenwatch/usage.db  (SQLite, default)
+  postgres://user:pass@host:5432/dbname
+  mysql://user:pass@host:3306/dbname
+  mongodb://user:pass@host:27017/dbname
+
+Examples:
+  tokenwatch dashboard
+  tokenwatch dashboard --port 8080
+  tokenwatch dashboard --db postgres://user:pass@localhost:5432/myapp
+  tokenwatch report --db mysql://root:pass@localhost:3306/myapp
 `.trim())
 }
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
   const [, , cmd, ...args] = process.argv
@@ -155,14 +259,11 @@ async function main(): Promise<void> {
       cmdPrices()
       break
     case 'report':
-      await cmdReport()
+      await cmdReport(args)
       break
-    case 'dashboard': {
-      const portFlagIdx = args.indexOf('--port')
-      const port = portFlagIdx !== -1 ? parseInt(args[portFlagIdx + 1] ?? '4242', 10) : 4242
-      await cmdDashboard(port)
+    case 'dashboard':
+      await cmdDashboard(args)
       break
-    }
     case 'help':
     case undefined:
       cmdHelp()

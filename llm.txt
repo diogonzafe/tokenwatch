@@ -259,11 +259,20 @@ scripts/scrape-prices.mjs — fetches LiteLLM JSON, run by GitHub Action
 ## CLI
 tokenwatch sync                  — fetch and cache remote prices
 tokenwatch prices                — list bundled models and prices
-tokenwatch report                — read ~/.tokenwatch/usage.db and print cost breakdown (total, by model, by user, by session, by feature)
-                                   shows "No SQLite database found" if db doesn't exist, "No usage recorded yet" if empty
-tokenwatch dashboard             — spin up local web dashboard at http://localhost:4242 (requires SQLite storage)
-tokenwatch dashboard --port N    — use custom port
+tokenwatch report [--db <url>]   — print cost breakdown (total, by model, by user, by session, by feature)
+                                   default: ~/.tokenwatch/usage.db (SQLite)
+                                   --db postgres://user:pass@host:5432/db
+                                   --db mysql://user:pass@host:3306/db
+                                   --db mongodb://user:pass@host:27017/db
+tokenwatch dashboard [--port N]  — spin up local web dashboard at http://localhost:4242
+             [--db <url>]        — same --db flag as report; works with any storage adapter
 tokenwatch help                  — help
+
+URL protocol auto-detection: postgres:// / postgresql:// → PostgresStorage (peer: pg)
+                              mysql:// → MySQLStorage (peer: mysql2)
+                              mongodb:// / mongodb+srv:// → MongoStorage (peer: mongodb)
+                              (none) → SqliteStorage at ~/.tokenwatch/usage.db (peer: better-sqlite3)
+Missing peer dep → clear error with install command, process exits cleanly.
 
 ## Dashboard
 tokenwatch dashboard opens a dark-themed real-time web UI reading from ~/.tokenwatch/usage.db.

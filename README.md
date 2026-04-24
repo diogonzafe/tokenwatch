@@ -577,11 +577,26 @@ Anomaly webhook payload example:
 ```bash
 npx tokenwatch sync              # force update cached prices from remote
 npx tokenwatch prices            # list all models and current prices
-npx tokenwatch report            # show usage report from ~/.tokenwatch/usage.db
+npx tokenwatch report            # show usage report (SQLite default)
+npx tokenwatch report    --db postgres://user:pass@host:5432/db
 npx tokenwatch dashboard         # open local web dashboard (default port: 4242)
 npx tokenwatch dashboard --port 8080
+npx tokenwatch dashboard --db postgres://user:pass@host:5432/db
+npx tokenwatch dashboard --db mysql://user:pass@host:3306/db
+npx tokenwatch dashboard --db mongodb://user:pass@host:27017/db
 npx tokenwatch help              # show help
 ```
+
+Both `report` and `dashboard` accept a `--db <url>` flag to connect directly to any database — no SQLite required. The URL protocol determines the adapter automatically:
+
+| URL prefix | Adapter | Peer dep required |
+|---|---|---|
+| *(none)* | SQLite (`~/.tokenwatch/usage.db`) | `better-sqlite3` |
+| `postgres://` or `postgresql://` | `PostgresStorage` | `pg` |
+| `mysql://` | `MySQLStorage` | `mysql2` |
+| `mongodb://` or `mongodb+srv://` | `MongoStorage` | `mongodb` |
+
+If the required peer dep is not installed, a clear error message with the install command is shown.
 
 ### `tokenwatch report`
 
