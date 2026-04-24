@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-04-23",
+  "updated_at": "2026-04-24",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1316,6 +1316,12 @@
       "cachedInput": 0.3,
       "cacheCreationInput": 3.75,
       "maxInputTokens": 1000000
+    },
+    "gpt-5.5": {
+      "input": 5,
+      "output": 30,
+      "cachedInput": 0.5,
+      "maxInputTokens": 272000
     }
   }
 }
