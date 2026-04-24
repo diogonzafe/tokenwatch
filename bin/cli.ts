@@ -16,7 +16,10 @@ const DEFAULT_DB_PATH = join(homedir(), '.tokenwatch', 'usage.db')
 
 function getFlag(args: string[], flag: string): string | undefined {
   const idx = args.indexOf(flag)
-  return idx !== -1 ? (args[idx + 1] ?? undefined) : undefined
+  if (idx === -1) return undefined
+  const value = args[idx + 1]
+  // Treat missing value or another flag as absent (e.g. --db --port would be wrong)
+  return value !== undefined && !value.startsWith('--') ? value : undefined
 }
 
 // ─── Storage factory ──────────────────────────────────────────────────────────
@@ -158,9 +161,13 @@ async function cmdReport(args: string[]): Promise<void> {
   const dbUrl = getFlag(args, '--db')
   const { storage, close } = await openStorage(dbUrl)
 
-  const tracker = createTracker({ storage, syncPrices: false })
-  const report = await tracker.getReport()
-  await close()
+  let report: Awaited<ReturnType<ReturnType<typeof createTracker>['getReport']>>
+  try {
+    const tracker = createTracker({ storage, syncPrices: false })
+    report = await tracker.getReport()
+  } finally {
+    await close()
+  }
 
   if (report.totalCostUSD === 0 && Object.keys(report.byModel).length === 0) {
     console.log('No usage recorded yet.')
@@ -209,6 +216,10 @@ async function cmdReport(args: string[]): Promise<void> {
 async function cmdDashboard(args: string[]): Promise<void> {
   const portFlag = getFlag(args, '--port')
   const port = portFlag !== undefined ? parseInt(portFlag, 10) : 4242
+  if (isNaN(port) || port < 1 || port > 65535) {
+    console.error(`[tokenwatch] Invalid port: "${portFlag}". Must be a number between 1 and 65535.`)
+    process.exit(1)
+  }
   const dbUrl = getFlag(args, '--db')
 
   const { storage, close } = await openStorage(dbUrl)

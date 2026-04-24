@@ -632,7 +632,16 @@ Spins up a local web server and opens a dark-themed dashboard with real-time cos
 - **Cost forecast** — projected daily and monthly spend based on recent burn rate
 - **Time filter tabs** — 1h | 24h | 7d | 30d | All; updates chart and tables in real-time via SSE
 
-Data updates automatically every 3 seconds without refreshing the page. Requires `storage: 'sqlite'` in your app and `better-sqlite3` installed. Zero external dependencies — pure Node.js HTTP server with Chart.js loaded from CDN.
+Data updates automatically every 3 seconds without refreshing the page. Zero external dependencies — pure Node.js HTTP server with Chart.js loaded from CDN.
+
+Works with **any storage backend** via `--db <url>`:
+
+```bash
+tokenwatch dashboard                                         # SQLite (default)
+tokenwatch dashboard --db postgres://user:pass@host:5432/db  # PostgreSQL
+tokenwatch dashboard --db mysql://user:pass@host:3306/db     # MySQL
+tokenwatch dashboard --db mongodb://user:pass@host:27017/db  # MongoDB
+```
 
 ---
 
