@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-04-25",
+  "updated_at": "2026-04-26",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1037,7 +1037,7 @@
     "deepseek-r1-distill-llama-70b": {
       "input": 0.99,
       "output": 0.99,
-      "maxInputTokens": 8000
+      "maxInputTokens": 32768
     },
     "deepseek-llama3.3-70b": {
       "input": 0.2,
@@ -1340,6 +1340,18 @@
       "output": 360,
       "cachedInput": 6,
       "maxInputTokens": 1050000
+    },
+    "gpt-5.4-mini-2026-03-17": {
+      "input": 0.75,
+      "output": 4.5,
+      "cachedInput": 0.075,
+      "maxInputTokens": 272000
+    },
+    "gpt-5.4-nano-2026-03-17": {
+      "input": 0.2,
+      "output": 1.25,
+      "cachedInput": 0.02,
+      "maxInputTokens": 272000
     }
   }
 }
