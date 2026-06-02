@@ -51,6 +51,9 @@ export interface IExporter {
 export interface TrackerConfig {
   /** 'memory' (default), 'sqlite', or a custom IStorage instance (e.g. PostgresStorage, MySQLStorage, MongoStorage) */
   storage?: 'memory' | 'sqlite' | IStorage
+  /** Tag all entries recorded by this tracker with an application identifier.
+   *  Useful when multiple apps share a single database — each tracker stamps its own appId. */
+  appId?: string
   /** USD threshold — fires webhookUrl when totalCostUSD exceeds this */
   alertThreshold?: number
   /** Discord / Slack / generic webhook URL */
@@ -94,6 +97,8 @@ export interface UsageEntry {
   userId?: string
   /** Product feature that triggered this call (set via __feature in provider params) */
   feature?: string
+  /** Application identifier — set once in TrackerConfig.appId and stamped on every entry */
+  appId?: string
   timestamp: string
 }
 
@@ -120,6 +125,11 @@ export interface FeatureStats {
   calls: number
 }
 
+export interface AppStats {
+  costUSD: number
+  calls: number
+}
+
 export interface ReportOptions {
   /** ISO string or Date — only include entries at or after this time */
   since?: string | Date
@@ -136,6 +146,7 @@ export interface Report {
   bySession: Record<string, SessionStats>
   byUser: Record<string, UserStats>
   byFeature: Record<string, FeatureStats>
+  byApp: Record<string, AppStats>
   period: { from: string; to: string }
   /** ISO date of the prices data in use (bundled or remote) */
   pricesUpdatedAt?: string
@@ -197,4 +208,6 @@ export interface TrackingMeta {
   __userId?: string
   /** Tag this call with a product feature name — appears in report.byFeature */
   __feature?: string
+  /** Override the tracker-level appId for this specific call */
+  __appId?: string
 }

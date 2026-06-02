@@ -38,11 +38,12 @@ describe('MongoStorage', () => {
     const db = makeDb()
     const storage = new MongoStorage(db)
     await storage.createIndexes()
-    expect(db._collection.createIndex).toHaveBeenCalledTimes(4)
+    expect(db._collection.createIndex).toHaveBeenCalledTimes(5)
     expect(db._collection.createIndex).toHaveBeenCalledWith({ timestamp: 1 })
     expect(db._collection.createIndex).toHaveBeenCalledWith({ sessionId: 1 })
     expect(db._collection.createIndex).toHaveBeenCalledWith({ userId: 1 })
     expect(db._collection.createIndex).toHaveBeenCalledWith({ model: 1 })
+    expect(db._collection.createIndex).toHaveBeenCalledWith({ appId: 1 })
   })
 
   it('record() inserts a document with correct fields', () => {

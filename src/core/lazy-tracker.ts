@@ -11,7 +11,7 @@ import type {
 import { createTracker } from './tracker.js'
 
 const CSV_HEADER =
-  'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature'
+  'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature,appId'
 
 function emptyReport(): Report {
   const now = new Date().toISOString()
@@ -22,6 +22,7 @@ function emptyReport(): Report {
     bySession: {},
     byUser: {},
     byFeature: {},
+    byApp: {},
     period: { from: now, to: now },
   }
 }

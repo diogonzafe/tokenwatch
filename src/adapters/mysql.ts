@@ -43,6 +43,7 @@ export class MySQLStorage implements IStorage {
         session_id            VARCHAR(255),
         user_id               VARCHAR(255),
         feature               VARCHAR(255),
+        app_id                VARCHAR(255),
         timestamp             DATETIME(3)   NOT NULL
       )
     `)
@@ -52,7 +53,8 @@ export class MySQLStorage implements IStorage {
         ADD COLUMN IF NOT EXISTS reasoning_tokens      INT NOT NULL DEFAULT 0,
         ADD COLUMN IF NOT EXISTS feature               VARCHAR(255),
         ADD COLUMN IF NOT EXISTS cached_tokens         INT NOT NULL DEFAULT 0,
-        ADD COLUMN IF NOT EXISTS cache_creation_tokens INT NOT NULL DEFAULT 0
+        ADD COLUMN IF NOT EXISTS cache_creation_tokens INT NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS app_id                VARCHAR(255)
     `).catch(() => { /* MySQL < 8.0 may not support IF NOT EXISTS — ignore if columns already exist */ })
   }
 
@@ -61,8 +63,8 @@ export class MySQLStorage implements IStorage {
       .execute(
         `INSERT INTO tokenwatch_usage
          (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
-          cost_usd, session_id, user_id, feature, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          cost_usd, session_id, user_id, feature, app_id, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           entry.model,
           entry.inputTokens,
@@ -74,6 +76,7 @@ export class MySQLStorage implements IStorage {
           entry.sessionId ?? null,
           entry.userId ?? null,
           entry.feature ?? null,
+          entry.appId ?? null,
           entry.timestamp,
         ],
       )
@@ -116,6 +119,7 @@ function rowToEntry(r: Record<string, unknown>): UsageEntry {
     ...(r['session_id'] != null && { sessionId: r['session_id'] as string }),
     ...(r['user_id'] != null && { userId: r['user_id'] as string }),
     ...(r['feature'] != null && { feature: r['feature'] as string }),
+    ...(r['app_id'] != null && { appId: r['app_id'] as string }),
     timestamp:
       r['timestamp'] instanceof Date
         ? (r['timestamp'] as Date).toISOString()

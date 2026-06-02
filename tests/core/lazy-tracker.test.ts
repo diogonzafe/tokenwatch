@@ -3,7 +3,7 @@ import { createLazyTracker } from '../../src/core/lazy-tracker.js'
 import type { Tracker } from '../../src/types/index.js'
 
 const CSV_HEADER =
-  'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature'
+  'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature,appId'
 
 describe('createLazyTracker() — before init()', () => {
   it('track() before init() does not throw, and getReport() shows zero cost', async () => {

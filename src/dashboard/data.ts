@@ -7,6 +7,7 @@ import type {
   SessionStats,
   UserStats,
   FeatureStats,
+  AppStats,
 } from '../types/index.js'
 
 export interface TimeSeriesBucket {
@@ -100,6 +101,7 @@ export async function getDashboardData(
   const bySession: Record<string, SessionStats> = {}
   const byUser: Record<string, UserStats> = {}
   const byFeature: Record<string, FeatureStats> = {}
+  const byApp: Record<string, AppStats> = {}
   let totalInput = 0
   let totalOutput = 0
   let totalCost = 0
@@ -136,6 +138,12 @@ export async function getDashboardData(
       f.costUSD += e.costUSD
       f.calls += 1
     }
+
+    if (e.appId) {
+      const a = (byApp[e.appId] ??= { costUSD: 0, calls: 0 })
+      a.costUSD += e.costUSD
+      a.calls += 1
+    }
   }
 
   const now = new Date().toISOString()
@@ -149,6 +157,7 @@ export async function getDashboardData(
     bySession,
     byUser,
     byFeature,
+    byApp,
     period: { from: periodFrom, to: periodTo },
   }
 

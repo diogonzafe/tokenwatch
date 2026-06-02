@@ -44,6 +44,7 @@ export class PostgresStorage implements IStorage {
         session_id            TEXT,
         user_id               TEXT,
         feature               TEXT,
+        app_id                TEXT,
         timestamp             TIMESTAMPTZ NOT NULL
       )
     `)
@@ -53,6 +54,7 @@ export class PostgresStorage implements IStorage {
       'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS feature TEXT',
       'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS cached_tokens INTEGER NOT NULL DEFAULT 0',
       'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS cache_creation_tokens INTEGER NOT NULL DEFAULT 0',
+      'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS app_id TEXT',
     ]) {
       await this.client.query(col).catch(() => { /* column already exists */ })
     }
@@ -63,8 +65,8 @@ export class PostgresStorage implements IStorage {
       .query(
         `INSERT INTO tokenwatch_usage
          (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
-          cost_usd, session_id, user_id, feature, timestamp)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          cost_usd, session_id, user_id, feature, app_id, timestamp)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           entry.model,
           entry.inputTokens,
@@ -76,6 +78,7 @@ export class PostgresStorage implements IStorage {
           entry.sessionId ?? null,
           entry.userId ?? null,
           entry.feature ?? null,
+          entry.appId ?? null,
           entry.timestamp,
         ],
       )
@@ -118,6 +121,7 @@ function rowToEntry(r: Record<string, unknown>): UsageEntry {
     ...(r['session_id'] != null && { sessionId: r['session_id'] as string }),
     ...(r['user_id'] != null && { userId: r['user_id'] as string }),
     ...(r['feature'] != null && { feature: r['feature'] as string }),
+    ...(r['app_id'] != null && { appId: r['app_id'] as string }),
     timestamp:
       r['timestamp'] instanceof Date
         ? (r['timestamp'] as Date).toISOString()

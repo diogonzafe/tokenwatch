@@ -34,7 +34,7 @@ describe('PostgresStorage', () => {
     storage.record(entry)
     expect(client.query).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO tokenwatch_usage'),
-      [entry.model, entry.inputTokens, entry.outputTokens, 200, 0, 0, entry.costUSD, 'sess-1', 'user-1', 'chat', entry.timestamp],
+      [entry.model, entry.inputTokens, entry.outputTokens, 200, 0, 0, entry.costUSD, 'sess-1', 'user-1', 'chat', null, entry.timestamp],
     )
   })
 

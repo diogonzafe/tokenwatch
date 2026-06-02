@@ -74,6 +74,7 @@ export class SqliteStorage implements IStorage {
         session_id            TEXT,
         user_id               TEXT,
         feature               TEXT,
+        app_id                TEXT,
         timestamp             TEXT    NOT NULL
       )
     `)
@@ -92,6 +93,9 @@ export class SqliteStorage implements IStorage {
     if (!cols.includes('cache_creation_tokens')) {
       this.db.exec(`ALTER TABLE usage ADD COLUMN cache_creation_tokens INTEGER NOT NULL DEFAULT 0`)
     }
+    if (!cols.includes('app_id')) {
+      this.db.exec(`ALTER TABLE usage ADD COLUMN app_id TEXT`)
+    }
   }
 
   record(entry: UsageEntry): void {
@@ -99,8 +103,8 @@ export class SqliteStorage implements IStorage {
       .prepare(
         `INSERT INTO usage
          (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
-          cost_usd, session_id, user_id, feature, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          cost_usd, session_id, user_id, feature, app_id, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         entry.model,
@@ -113,6 +117,7 @@ export class SqliteStorage implements IStorage {
         entry.sessionId ?? null,
         entry.userId ?? null,
         entry.feature ?? null,
+        entry.appId ?? null,
         entry.timestamp,
       )
   }
@@ -129,6 +134,7 @@ export class SqliteStorage implements IStorage {
       session_id: string | null
       user_id: string | null
       feature: string | null
+      app_id: string | null
       timestamp: string
     }>
 
@@ -143,6 +149,7 @@ export class SqliteStorage implements IStorage {
       ...(r.session_id != null && { sessionId: r.session_id }),
       ...(r.user_id != null && { userId: r.user_id }),
       ...(r.feature != null && { feature: r.feature }),
+      ...(r.app_id != null && { appId: r.app_id }),
       timestamp: r.timestamp,
     }))
   }

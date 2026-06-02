@@ -37,6 +37,7 @@ interface MongoDocument {
   sessionId?: string | null
   userId?: string | null
   feature?: string | null
+  appId?: string | null
   timestamp: string
 }
 
@@ -71,6 +72,7 @@ export class MongoStorage implements IStorage {
     await this.col.createIndex({ sessionId: 1 })
     await this.col.createIndex({ userId: 1 })
     await this.col.createIndex({ model: 1 })
+    await this.col.createIndex({ appId: 1 })
   }
 
   record(entry: UsageEntry): void {
@@ -86,6 +88,7 @@ export class MongoStorage implements IStorage {
         sessionId: entry.sessionId ?? null,
         userId: entry.userId ?? null,
         ...(entry.feature !== undefined && { feature: entry.feature }),
+        ...(entry.appId !== undefined && { appId: entry.appId }),
         timestamp: entry.timestamp,
       })
       .catch((err: unknown) => {
@@ -119,6 +122,7 @@ function docToEntry(doc: MongoDocument): UsageEntry {
     ...(doc.sessionId != null && { sessionId: doc.sessionId }),
     ...(doc.userId != null && { userId: doc.userId }),
     ...(doc.feature != null && { feature: doc.feature }),
+    ...(doc.appId != null && { appId: doc.appId }),
     timestamp: doc.timestamp,
   }
 }

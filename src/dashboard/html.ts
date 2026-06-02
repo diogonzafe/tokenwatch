@@ -279,6 +279,11 @@ details[open] summary::before { transform: rotate(90deg); }
     <div id="model-table-wrap"></div>
   </div>
 
+  <details id="apps-section" style="margin-bottom:24px;">
+    <summary>By app</summary>
+    <div id="app-table-wrap"></div>
+  </details>
+
   <details id="users-section" style="margin-bottom:24px;">
     <summary>By user</summary>
     <div id="user-table-wrap"></div>
@@ -504,6 +509,19 @@ details[open] summary::before { transform: rotate(90deg); }
       });
       html += '</tbody></table>';
       modelWrap.innerHTML = html;
+    }
+
+    // App table
+    const appEntries = Object.entries(r.byApp || {});
+    const appsSection = document.getElementById('apps-section');
+    appsSection.style.display = appEntries.length === 0 ? 'none' : '';
+    if (appEntries.length > 0) {
+      let html = '<table><thead><tr><th>App</th><th class="num">Calls</th><th class="num">Cost</th></tr></thead><tbody>';
+      appEntries.slice().sort(function(a,b) { return b[1].costUSD - a[1].costUSD; }).forEach(function(e) {
+        html += '<tr><td>' + escHtml(e[0]) + '</td><td class="num">' + fmtNum(e[1].calls) + '</td><td class="num">' + fmtUSD(e[1].costUSD) + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('app-table-wrap').innerHTML = html;
     }
 
     // User table

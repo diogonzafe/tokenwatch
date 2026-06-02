@@ -11,6 +11,7 @@ import type {
   SessionStats,
   UserStats,
   FeatureStats,
+  AppStats,
   ModelPrice,
   PriceMap,
   IStorage,
@@ -75,6 +76,7 @@ const TrackerConfigSchema = z.object({
     typeof v === 'object' &&
     typeof (v as IExporter).export === 'function'
   )).optional(),
+  appId: z.string().optional(),
 })
 
 export function createTracker(config: TrackerConfig = {}): Tracker {
@@ -95,6 +97,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     suggestions,
     anomalyDetection,
     exporter,
+    appId,
   } = parsed.data
 
   const storage: IStorage =
@@ -167,6 +170,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       ...entry,
       costUSD,
       timestamp: new Date().toISOString(),
+      ...(appId !== undefined && entry.appId === undefined && { appId }),
     }
     storage.record(full)
     if (exporter) {
@@ -268,6 +272,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     const bySession: Record<string, SessionStats> = {}
     const byUser: Record<string, UserStats> = {}
     const byFeature: Record<string, FeatureStats> = {}
+    const byApp: Record<string, AppStats> = {}
 
     let totalInput = 0
     let totalOutput = 0
@@ -314,6 +319,13 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
         f.costUSD += e.costUSD
         f.calls += 1
       }
+
+      // byApp
+      if (e.appId) {
+        const a = (byApp[e.appId] ??= { costUSD: 0, calls: 0 })
+        a.costUSD += e.costUSD
+        a.calls += 1
+      }
     }
 
     // When filtering, use the actual first entry's timestamp as period.from
@@ -328,6 +340,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       bySession,
       byUser,
       byFeature,
+      byApp,
       period: { from: periodFrom, to: lastTimestamp },
       ...(pricesUpdatedAt ? { pricesUpdatedAt } : {}),
     }
@@ -450,7 +463,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
   async function exportCSV(): Promise<string> {
     const entries = await Promise.resolve(storage.getAll())
     const header =
-      'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature'
+      'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature,appId'
     const rows = entries.map((e) =>
       [
         csvEscape(e.timestamp),
@@ -464,6 +477,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
         csvEscape(e.sessionId ?? ''),
         csvEscape(e.userId ?? ''),
         csvEscape(e.feature ?? ''),
+        csvEscape(e.appId ?? ''),
       ].join(','),
     )
     return [header, ...rows].join('\n')
