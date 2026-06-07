@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-06",
+  "updated_at": "2026-06-07",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -43,14 +43,12 @@
       "input": 3,
       "output": 15,
       "cachedInput": 0.3,
-      "cacheCreationInput": 3.75,
-      "maxInputTokens": 1000000
+      "maxInputTokens": 200000
     },
     "claude-haiku-4-5": {
       "input": 1,
       "output": 5,
       "cachedInput": 0.1,
-      "cacheCreationInput": 1.25,
       "maxInputTokens": 200000
     },
     "gemini-2.5-pro": {
@@ -102,7 +100,6 @@
       "input": 3,
       "output": 15,
       "cachedInput": 0.3,
-      "cacheCreationInput": 3.75,
       "maxInputTokens": 200000
     },
     "gpt-oss-120b": {
@@ -595,9 +592,9 @@
       "maxInputTokens": 163840
     },
     "deepseek-r1": {
-      "input": 0.55,
-      "output": 2.19,
-      "maxInputTokens": 65536
+      "input": 1.35,
+      "output": 5.4,
+      "maxInputTokens": 128000
     },
     "deepseek-v3": {
       "input": 0.27,
@@ -1394,6 +1391,24 @@
       "cachedInput": 0.5,
       "cacheCreationInput": 6.25,
       "maxInputTokens": 1000000
+    },
+    "claude-4-sonnet": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "maxInputTokens": 200000
+    },
+    "claude-4-opus": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "maxInputTokens": 200000
+    },
+    "claude-3-7-sonnet": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "maxInputTokens": 200000
     }
   }
 }
