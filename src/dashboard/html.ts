@@ -776,6 +776,20 @@ function KpiCard({ label, value, sub, delta, deltaColor, spark, sparkColor, t })
     </div>
   );
 }
+function KpiRow({ kpis, range, t }) {
+  const { fmtUSD, fmtInt, seriesForRange } = window.TW;
+  const s = seriesForRange(range).current;
+  const callsSeries = s.map((v, i) => 6 + Math.abs(Math.sin(i * 1.7)) * 14);
+  return (
+    <div className="tw-kpis">
+      <KpiCard t={t} label="Total cost" value={fmtUSD(kpis.cost)} delta="&#x2191; 12% vs last week" deltaColor="#f85149" spark={s} sparkColor="#58a6ff" />
+      <KpiCard t={t} label="Input tokens" value={fmtInt(kpis.inTok)} sub="tokens in" spark={s} sparkColor="#3fb950" />
+      <KpiCard t={t} label="Output tokens" value={fmtInt(kpis.outTok)} sub="tokens out" spark={s.map((v) => v * 0.9)} sparkColor="#bc8cff" />
+      <KpiCard t={t} label="Total calls" value={fmtInt(kpis.calls)} delta="&#x2193; 5% vs last week" deltaColor="#3fb950" spark={callsSeries} sparkColor="#56d4dd" />
+      <KpiCard t={t} label="Burn rate" value={fmtUSD(kpis.burnHr, 4) + '/hr'} sub={'proj ' + fmtUSD(kpis.burnHr * 24, 2) + '/day'} spark={s.map((v) => v * 1.05)} sparkColor="#e3b341" />
+    </div>
+  );
+}
 function TimeFilter({ range, setRange, t, setTweak }) {
   const ranges = ['1h', '24h', '7d', '30d', 'All'];
   return (
@@ -801,7 +815,28 @@ function ForecastCard({ label, value, sub, accent, flag }) {
     </div>
   );
 }
-Object.assign(window, { Ico, Header, BudgetBar, KpiCard, TimeFilter, ForecastCard });
+function ForecastSection({ t }) {
+  const { fmtUSD, fmtMoney, BUDGET } = window.TW;
+  const daily = BUDGET.daily != null ? BUDGET.daily : 0.8473;
+  const burnHr = daily / 24;
+  const remaining = daily * BUDGET.daysLeft;
+  const projCycle = BUDGET.used + remaining;
+  const g = t.forecastScenario / 100;
+  const scenarioCycle = BUDGET.used + remaining * (1 + g);
+  const over = scenarioCycle > BUDGET.limit;
+  return (
+    <section className="tw-section">
+      <div className="tw-sec-head"><h3>Cost forecast</h3><span className="tw-sec-sub">based on current run-rate</span></div>
+      <div className="tw-forecast">
+        <ForecastCard label="Projected daily" value={fmtUSD(daily, 2)} sub="next 24h at this rate" />
+        <ForecastCard label="Projected this cycle" value={fmtMoney(projCycle)} sub={'of ' + fmtMoney(BUDGET.limit) + ' budget'} />
+        <ForecastCard label="Burn rate" value={fmtUSD(burnHr, 4)} sub="per hour" accent="#e3b341" />
+        <ForecastCard label={'If usage grows ' + t.forecastScenario + '%'} value={fmtMoney(scenarioCycle)} sub={over ? 'over budget ⚠' : fmtMoney(BUDGET.limit - scenarioCycle) + ' headroom'} accent={over ? '#f85149' : '#58a6ff'} flag={over} />
+      </div>
+    </section>
+  );
+}
+Object.assign(window, { Ico, Header, BudgetBar, KpiCard, KpiRow, TimeFilter, ForecastCard, ForecastSection });
 </script>
 
 <script type="text/babel">
@@ -1077,137 +1112,196 @@ Object.assign(window, { LiveActivity, CommandPalette });
 </script>
 
 <script type="text/babel">
-// tw-data-real.jsx — real SSE data adapter
-const { useState: useStateD, useEffect: useEffectD } = React;
-
-function fmtUSD(n, d) {
-  d = d == null ? 4 : d;
-  if (n == null || isNaN(n) || n === 0) return '$0.00';
-  if (n < 0.001) return '$' + n.toFixed(6);
-  if (n >= 1) return '$' + n.toFixed(2);
-  return '$' + n.toFixed(d);
-}
-function fmtMoney(n) { return fmtUSD(n, 2); }
-function fmtInt(n) { return Math.round(n || 0).toLocaleString('en-US'); }
-function fmtCompact(n) {
+// tw-data.jsx — mock data + formatters (always-populated baseline)
+const fmtUSD = (n, d = 4) =>
+  '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtMoney = (n) =>
+  '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtInt = (n) => Math.round(n || 0).toLocaleString('en-US');
+const fmtCompact = (n) => {
   n = n || 0;
-  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'K';
   return String(Math.round(n));
-}
-function fmtAgo(s) {
+};
+const fmtAgo = (s) => {
   if (s < 60) return s + 's ago';
   if (s < 3600) return Math.floor(s / 60) + 'm ago';
-  return Math.floor(s / 3600) + 'h ago';
-}
-
-const RANGES = {
-  '1h':  { step: '5min' },
-  '24h': { step: '1h' },
-  '7d':  { step: '1d' },
-  '30d': { step: '1d' },
-  'All': { step: '1d' },
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
 };
-
-const MODEL_COLORS = [
-  '#58a6ff','#3fb950','#bc8cff','#f78166','#d29922',
-  '#56d4dd','#79c0ff','#ffa657','#ff7b72','#a5d6ff',
+const BASE_MODELS = [
+  { id: 'gpt-5-mini',        provider: 'OpenAI',    color: '#3fb950', calls: 94, inTok: 1040000, outTok: 118000, cost: 0.2110, latency: 590  },
+  { id: 'claude-sonnet-4-6', provider: 'Anthropic', color: '#bc8cff', calls: 58, inTok: 612000,  outTok: 84000,  cost: 0.3120, latency: 1840 },
+  { id: 'gemini-2.5-flash',  provider: 'Google',    color: '#58a6ff', calls: 47, inTok: 430000,  outTok: 56000,  cost: 0.1190, latency: 510  },
+  { id: 'claude-haiku-4-5',  provider: 'Anthropic', color: '#f778ba', calls: 38, inTok: 268100,  outTok: 38540,  cost: 0.1240, latency: 680  },
+  { id: 'gpt-5.1',           provider: 'OpenAI',    color: '#e3b341', calls: 18, inTok: 88000,   outTok: 12000,  cost: 0.0613, latency: 2210 },
+  { id: 'gemini-2.5-pro',    provider: 'Google',    color: '#56d4dd', calls: 8,  inTok: 42000,   outTok: 4000,   cost: 0.0200, latency: 1990 },
 ];
-
-function guessProvider(id) {
-  if (/claude/i.test(id)) return 'Anthropic';
-  if (/gpt|o1|o3|o4/i.test(id)) return 'OpenAI';
-  if (/gemini/i.test(id)) return 'Google';
-  if (/llama|mistral|qwen/i.test(id)) return 'Open';
-  return 'Other';
-}
-
-function buildModels(byModel) {
-  return Object.entries(byModel || {})
-    .map(([id, stats], i) => ({
-      id,
-      provider: guessProvider(id),
-      color: MODEL_COLORS[i % MODEL_COLORS.length],
-      calls: stats.calls || 0,
-      inTok: (stats.tokens && stats.tokens.input) || 0,
-      outTok: (stats.tokens && stats.tokens.output) || 0,
-      cost: stats.costUSD || 0,
-      latency: 0,
-    }))
-    .sort((a, b) => b.cost - a.cost);
-}
-
-const FEATURES = ['chat', 'search', 'summary', 'embed', 'classify'];
-const SESSION_IDS = ['sess_a1b2', 'sess_c3d4', 'sess_e5f6', 'sess_g7h8'];
-function seedFeed(n) {
-  return Array.from({ length: n }, (_, i) => makeCall(i * 60, i));
-}
-function makeCall(secondsAgo, seed) {
-  const models = window.__TW_MODELS || [{ id: 'unknown', color: '#58a6ff' }];
-  const m = models[seed % models.length];
-  const cost = 0.0003 + (seed % 17) * 0.0002;
-  return {
-    id: 'c' + seed,
-    model: m.id,
-    modelColor: m.color,
-    session: SESSION_IDS[seed % SESSION_IDS.length],
-    feature: FEATURES[seed % FEATURES.length],
-    featureColor: MODEL_COLORS[(seed + 2) % MODEL_COLORS.length],
-    inTok: 200 + (seed % 800),
-    outTok: 50 + (seed % 300),
-    cost,
-    latency: 300 + (seed % 2000),
-    status: seed % 13 === 0 ? 'error' : seed % 7 === 0 ? 'slow' : 'ok',
-    ts: Date.now() - secondsAgo * 1000,
-    secondsAgo,
-  };
-}
-function callsForModel(modelId, n) {
-  return Array.from({ length: n }, (_, i) => ({
-    id: 'c' + modelId + i,
-    inTok: 200 + i * 150,
-    outTok: 50 + i * 80,
-    cost: 0.0003 + i * 0.0002,
-    latency: 300 + i * 200,
-    status: i === 3 ? 'slow' : 'ok',
-    feature: FEATURES[i % FEATURES.length],
-    featureColor: MODEL_COLORS[(i + 2) % MODEL_COLORS.length],
-    secondsAgo: i * 120 + 30,
+const RANGES = {
+  '1h':  { factor: 0.052, points: 12, label: 'last hour',   step: '5 min' },
+  '24h': { factor: 1,     points: 24, label: 'last 24h',    step: 'hour'  },
+  '7d':  { factor: 6.4,   points: 28, label: 'last 7 days', step: '6h'   },
+  '30d': { factor: 53.1,  points: 30, label: 'last 30 days',step: 'day'  },
+  'All': { factor: 142,   points: 26, label: 'all time',    step: 'week' },
+};
+function modelsForRange(range) {
+  const f = RANGES[range].factor;
+  return BASE_MODELS.map((m) => ({
+    ...m,
+    calls: Math.max(1, Math.round(m.calls * f)),
+    inTok: Math.round(m.inTok * f),
+    outTok: Math.round(m.outTok * f),
+    cost: m.cost * f,
   }));
 }
-
-function useDashboardSSE(filter) {
-  const [data, setData] = useStateD(null);
-  const [status, setStatus] = useStateD('connecting');
-  useEffectD(() => {
-    const f = filter === 'All' ? 'all' : filter;
-    const es = new EventSource('/events?filter=' + encodeURIComponent(f));
-    es.onopen = () => setStatus('live');
-    es.onerror = () => setStatus('reconnecting');
-    es.onmessage = (ev) => {
-      try { setData(JSON.parse(ev.data)); setStatus('live'); } catch (_) {}
-    };
-    return () => es.close();
-  }, [filter]);
-  return { data, status };
+function kpisForRange(range) {
+  const ms = modelsForRange(range);
+  const sum = (k) => ms.reduce((a, m) => a + m[k], 0);
+  const cost = sum('cost'), calls = sum('calls');
+  return {
+    cost, calls,
+    inTok: sum('inTok'), outTok: sum('outTok'),
+    models: ms,
+    burnHr: cost / ({ '1h': 1, '24h': 24, '7d': 168, '30d': 720, 'All': 3408 }[range]),
+  };
 }
+const DAY_SHAPE = [0.2,0.15,0.12,0.1,0.1,0.15,0.3,0.6,1.0,1.4,1.7,1.8,1.6,1.5,1.9,2.0,1.7,1.3,1.0,0.8,0.6,0.45,0.35,0.25];
+function shapeFor(n) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i / n) * DAY_SHAPE.length;
+    const a = DAY_SHAPE[Math.floor(t) % DAY_SHAPE.length];
+    const b = DAY_SHAPE[(Math.floor(t) + 1) % DAY_SHAPE.length];
+    out.push(a + (b - a) * (t - Math.floor(t)));
+  }
+  return out;
+}
+function buildSeries(total, n, jitterSeed = 1) {
+  const shape = shapeFor(n);
+  const j = shape.map((v, i) => v * (0.82 + 0.36 * Math.abs(Math.sin(i * 12.9898 * jitterSeed))));
+  const s = j.reduce((a, b) => a + b, 0);
+  return j.map((v) => (v / s) * total);
+}
+function seriesForRange(range) {
+  const { cost } = kpisForRange(range);
+  const n = RANGES[range].points;
+  return { current: buildSeries(cost, n, 1), previous: buildSeries(cost / 1.12, n, 1.7), n };
+}
+const FEATURES = ['chat', 'rag-search', 'summarize', 'classify', 'agent-loop', 'embeddings', 'code-review', 'extract'];
+const FEATURE_COLOR = {
+  'chat': '#58a6ff', 'rag-search': '#3fb950', 'summarize': '#bc8cff', 'classify': '#e3b341',
+  'agent-loop': '#f778ba', 'embeddings': '#56d4dd', 'code-review': '#ff7b72', 'extract': '#7ee787',
+};
+let __callSeq = 48213;
+function rng(seed) { let x = Math.sin(seed) * 10000; return x - Math.floor(x); }
+function makeCall(secondsAgo, seed) {
+  const m = BASE_MODELS[Math.floor(rng(seed) * BASE_MODELS.length)];
+  const feat = FEATURES[Math.floor(rng(seed * 1.3) * FEATURES.length)];
+  const inTok = Math.round(800 + rng(seed * 2.1) * 14000);
+  const outTok = Math.round(60 + rng(seed * 3.7) * 2200);
+  const cost = (inTok / 1e6) * 0.4 + (outTok / 1e6) * 3.2;
+  const r = rng(seed * 5.9);
+  const status = r > 0.965 ? 'error' : r > 0.9 ? 'slow' : 'ok';
+  return {
+    id: ++__callSeq, secondsAgo, ts: Date.now() - secondsAgo * 1000,
+    model: m.id, modelColor: m.color,
+    session: 'sess_' + (seed * 7919 % 1e6 | 0).toString(36).padStart(4, '0'),
+    feature: feat, featureColor: FEATURE_COLOR[feat],
+    inTok, outTok, cost, latency: Math.round(m.latency * (0.6 + rng(seed * 8.3) * 1.2)), status,
+  };
+}
+function seedFeed(count) {
+  const arr = [];
+  for (let i = 0; i < count; i++) arr.push(makeCall(2 + i * 7 + Math.floor(rng(i * 3.3) * 6), 100 + i));
+  return arr;
+}
+function callsForModel(modelId, count = 5) {
+  const arr = [];
+  let sa = 12;
+  for (let i = 0; i < count; i++) {
+    const c = makeCall(sa, 900 + i + modelId.length);
+    c.model = modelId;
+    c.modelColor = (BASE_MODELS.find((m) => m.id === modelId) || {}).color || '#58a6ff';
+    arr.push(c);
+    sa += 40 + Math.floor(rng(i * 2.2) * 220);
+  }
+  return arr;
+}
+const BUDGET = { used: 45.0, limit: 100.0, daysLeft: 18, cycleDays: 30 };
 
-const _now = new Date();
-const _daysElapsed = _now.getDate() - 1;
-const _daysInMonth = new Date(_now.getFullYear(), _now.getMonth() + 1, 0).getDate();
-const BUDGET = { used: 0, limit: 10, daysLeft: _daysInMonth - _daysElapsed, cycleDays: _daysInMonth };
+Object.assign(window, {
+  TW: {
+    fmtUSD, fmtMoney, fmtInt, fmtCompact, fmtAgo,
+    BASE_MODELS, RANGES, modelsForRange, kpisForRange,
+    seriesForRange, seedFeed, makeCall, callsForModel,
+    FEATURES, FEATURE_COLOR, BUDGET, _buildSeries: buildSeries,
+  },
+});
 
-window.TW = { fmtUSD, fmtMoney, fmtInt, fmtCompact, fmtAgo, RANGES, BUDGET, seedFeed, makeCall, callsForModel };
-window.__TW_MODELS = [];
-window.useDashboardSSE = useDashboardSSE;
-window.buildModels = buildModels;
-window.MODEL_COLORS = MODEL_COLORS;
+// SSE overlay — patches window.TW functions when real data arrives
+(function () {
+  var MC = ['#bc8cff','#3fb950','#58a6ff','#f778ba','#e3b341','#56d4dd','#79c0ff','#ffa657','#ff7b72','#a5d6ff'];
+  function guessProv(id) {
+    if (/claude/i.test(id)) return 'Anthropic';
+    if (/gpt|o1|o3|o4/i.test(id)) return 'OpenAI';
+    if (/gemini/i.test(id)) return 'Google';
+    return 'Other';
+  }
+  function buildRealModels(byModel) {
+    return Object.entries(byModel).map(function(e, i) {
+      var id = e[0], s = e[1];
+      return { id: id, provider: guessProv(id), color: MC[i % MC.length],
+        calls: s.calls || 0, inTok: (s.tokens && s.tokens.input) || 0,
+        outTok: (s.tokens && s.tokens.output) || 0, cost: s.costUSD || 0, latency: 1200 };
+    }).sort(function(a, b) { return b.cost - a.cost; });
+  }
+  function applySSEData(data) {
+    var r = data.report, fc = data.forecast, ts = data.timeSeries || [];
+    if (!r || !r.byModel || Object.keys(r.byModel).length === 0) return;
+    var mods = buildRealModels(r.byModel);
+    var totalCalls = mods.reduce(function(s, m) { return s + m.calls; }, 0);
+    var totalCost = r.totalCostUSD || 0;
+    var totalIn = 0, totalOut = 0;
+    if (r.totalTokens) { totalIn = r.totalTokens.input || 0; totalOut = r.totalTokens.output || 0; }
+    else { mods.forEach(function(m) { totalIn += m.inTok; totalOut += m.outTok; }); }
+    var costs = ts.map(function(b) { return b.cost || 0; });
+    window.TW.kpisForRange = function() {
+      return { cost: totalCost, calls: totalCalls, inTok: totalIn, outTok: totalOut,
+        models: mods, burnHr: (fc && fc.burnRatePerHour) || 0 };
+    };
+    if (costs.length >= 2) {
+      window.TW.seriesForRange = function() {
+        return { current: costs, previous: buildSeries(totalCost / 1.12, costs.length, 1.7), n: costs.length };
+      };
+    }
+    if (fc && fc.projectedDailyCostUSD) window.TW.BUDGET.daily = fc.projectedDailyCostUSD;
+    if (fc && fc.burnRatePerHour) {
+      var elapsed = window.TW.BUDGET.cycleDays - window.TW.BUDGET.daysLeft;
+      window.TW.BUDGET.used = fc.burnRatePerHour * 24 * Math.max(elapsed, 1);
+    }
+    window.dispatchEvent(new CustomEvent('tw-data-update'));
+  }
+  var evtSource = null;
+  function connect(filter) {
+    if (evtSource) { try { evtSource.close(); } catch(e) {} }
+    var f = filter === 'All' ? 'all' : filter;
+    evtSource = new EventSource('/events?filter=' + encodeURIComponent(f));
+    evtSource.onmessage = function(e) { try { applySSEData(JSON.parse(e.data)); } catch(_) {} };
+    evtSource.onerror = function() {
+      try { evtSource.close(); } catch(e) {}
+      setTimeout(function() { connect(f); }, 5000);
+    };
+  }
+  window.__twSSEConnect = connect;
+  connect('24h');
+})();
 </script>
 
 <script type="text/babel">
-// tw-app-real.jsx — main app wired to SSE
+// tw-app.jsx
 const { useState: useStateApp, useEffect: useEffectApp, useMemo: useMemoApp } = React;
+
 
 function LoadingSkeleton() {
   return (
@@ -1222,7 +1316,6 @@ function LoadingSkeleton() {
     </div>
   );
 }
-
 function EmptyState() {
   return (
     <div className="tw-empty">
@@ -1245,7 +1338,6 @@ function EmptyState() {
     </div>
   );
 }
-
 function ChartsRow({ range, models, kpis, series, t }) {
   const { fmtUSD, RANGES } = window.TW;
   const [activeSlice, setActiveSlice] = useStateApp(null);
@@ -1263,15 +1355,9 @@ function ChartsRow({ range, models, kpis, series, t }) {
             <span className="tw-sec-sub">&middot; per {rangeConfig.step}</span>
           </div>
         </div>
-        <LineChart
-          current={series.current}
-          previous={t.compareMode ? series.previous : null}
-          n={series.n}
-          color={t.accent}
-          compare={t.compareMode && !!series.previous}
-          animate={animate}
-          fmt={(v) => fmtUSD(v, 4)}
-        />
+        <LineChart current={series.current} previous={t.compareMode ? series.previous : null}
+          n={series.n} color={t.accent} compare={t.compareMode && !!series.previous}
+          animate={animate} fmt={(v) => fmtUSD(v, 4)} />
       </div>
       <div className="tw-card tw-chart-side">
         <div className="tw-sec-head"><h3>By model</h3></div>
@@ -1293,43 +1379,6 @@ function ChartsRow({ range, models, kpis, series, t }) {
     </div>
   );
 }
-
-function KpiRowReal({ kpis, series, t }) {
-  const { fmtUSD, fmtInt } = window.TW;
-  const s = series.current.length >= 2 ? series.current : [0, 0];
-  const callsSeries = s.map((_, i) => 6 + Math.abs(Math.sin(i * 1.7)) * 14);
-  return (
-    <div className="tw-kpis">
-      <KpiCard t={t} label="Total cost" value={fmtUSD(kpis.cost)} spark={s} sparkColor="#58a6ff" />
-      <KpiCard t={t} label="Input tokens" value={fmtInt(kpis.inTok)} sub="tokens in" spark={s} sparkColor="#3fb950" />
-      <KpiCard t={t} label="Output tokens" value={fmtInt(kpis.outTok)} sub="tokens out" spark={s.map((v) => v * 0.9)} sparkColor="#bc8cff" />
-      <KpiCard t={t} label="Total calls" value={fmtInt(kpis.calls)} spark={callsSeries} sparkColor="#56d4dd" />
-      <KpiCard t={t} label="Burn rate" value={fmtUSD(kpis.burnHr, 4) + '/hr'} sub={'proj ' + fmtUSD(kpis.burnHr * 24, 2) + '/day'} spark={s.map((v) => v * 1.05)} sparkColor="#e3b341" />
-    </div>
-  );
-}
-
-function ForecastSectionReal({ forecast, t }) {
-  const { fmtUSD, fmtMoney, BUDGET } = window.TW;
-  const daily = forecast.projectedDailyCostUSD || 0;
-  const burnHr = forecast.burnRatePerHour || 0;
-  const projCycle = BUDGET.used + daily * BUDGET.daysLeft;
-  const g = t.forecastScenario / 100;
-  const scenarioCycle = BUDGET.used + daily * BUDGET.daysLeft * (1 + g);
-  const over = scenarioCycle > BUDGET.limit;
-  return (
-    <section className="tw-section">
-      <div className="tw-sec-head"><h3>Cost forecast</h3><span className="tw-sec-sub">based on current run-rate</span></div>
-      <div className="tw-forecast">
-        <ForecastCard label="Projected daily" value={fmtUSD(daily, 2)} sub="next 24h at this rate" />
-        <ForecastCard label="Projected this cycle" value={fmtMoney(projCycle)} sub={'of ' + fmtMoney(BUDGET.limit) + ' budget'} />
-        <ForecastCard label="Burn rate" value={fmtUSD(burnHr, 4)} sub="per hour" accent="#e3b341" />
-        <ForecastCard label={'If usage grows ' + t.forecastScenario + '%'} value={fmtMoney(scenarioCycle)} sub={over ? 'over budget ⚠' : fmtMoney(BUDGET.limit - scenarioCycle) + ' headroom'} accent={over ? '#f85149' : '#58a6ff'} flag={over} />
-      </div>
-    </section>
-  );
-}
-
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "density": "compact",
   "kpiSparklines": true,
@@ -1341,42 +1390,37 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "liveFeed": true,
   "animLevel": "lively",
   "commandPalette": true,
+  "appState": "data",
   "accent": "#58a6ff"
 }/*EDITMODE-END*/;
-
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [range, setRange] = useStateApp('24h');
   const [selModel, setSelModel] = useStateApp(null);
   const [paletteOpen, setPaletteOpen] = useStateApp(false);
-
-  const { data, status } = useDashboardSSE(range);
-
-  const models = useMemoApp(() => buildModels(data && data.report && data.report.byModel || {}), [data]);
-
-  const kpis = useMemoApp(() => {
-    if (!data) return { cost: 0, inTok: 0, outTok: 0, calls: 0, burnHr: 0 };
-    return {
-      cost: data.report.totalCostUSD || 0,
-      inTok: (data.report.totalTokens && data.report.totalTokens.input) || 0,
-      outTok: (data.report.totalTokens && data.report.totalTokens.output) || 0,
-      calls: models.reduce((s, m) => s + m.calls, 0),
-      burnHr: (data.forecast && data.forecast.burnRatePerHour) || 0,
-    };
-  }, [data, models]);
-
-  const series = useMemoApp(() => {
-    if (!data || !data.timeSeries || data.timeSeries.length === 0) return { current: [0, 0], previous: null, n: 2 };
-    const costs = data.timeSeries.map((b) => b.cost || 0);
-    return { current: costs, previous: null, n: costs.length };
-  }, [data]);
+  const [_sseV, setSseV] = useStateApp(0);
 
   useEffectApp(() => {
-    if (!data) return;
-    const elapsed = window.TW.BUDGET.cycleDays - window.TW.BUDGET.daysLeft;
-    window.TW.BUDGET.used = ((data.forecast && data.forecast.burnRatePerHour) || 0) * 24 * Math.max(elapsed, 0.04);
-    window.__TW_MODELS = models;
-  }, [data, models]);
+    const h = function() { setSseV(function(v) { return v + 1; }); };
+    window.addEventListener('tw-data-update', h);
+    return function() { window.removeEventListener('tw-data-update', h); };
+  }, []);
+
+  useEffectApp(() => {
+    if (window.__twSSEConnect) window.__twSSEConnect(range);
+  }, [range]);
+
+  const kpis = useMemoApp(() => {
+    const { kpisForRange } = window.TW;
+    return kpisForRange(range);
+  }, [range, _sseV]);
+
+  const series = useMemoApp(() => {
+    const { seriesForRange } = window.TW;
+    return seriesForRange(range);
+  }, [range, _sseV]);
+
+  const models = kpis.models;
 
   useEffectApp(() => {
     const onKey = (e) => {
@@ -1392,28 +1436,28 @@ function App() {
   const handleAction = (act) => {
     if (!act) return;
     if (act.range) setRange(act.range);
-    if (act.model) { const m = models.find((x) => x.id === act.model); if (m) setSelModel({ ...m, share: m.cost / Math.max(kpis.cost, 0.0001) }); }
+    if (act.model) {
+      const m = models.find((x) => x.id === act.model);
+      if (m) setSelModel({ ...m, share: m.cost / Math.max(kpis.cost, 0.0001) });
+    }
   };
-
-  const isEmpty = !!data && models.length === 0;
-  const isLoading = !data;
 
   return (
     <div className="tw-root" style={{ '--accent': t.accent }}>
       <Header t={t} onOpenPalette={() => setPaletteOpen(true)} />
-      {isLoading ? (
+      {t.appState === 'loading' ? (
         <main className="tw-main"><LoadingSkeleton /></main>
-      ) : isEmpty ? (
+      ) : t.appState === 'empty' ? (
         <main className="tw-main"><EmptyState /></main>
       ) : (
         <main className="tw-main">
           <BudgetBar t={t} />
-          <KpiRowReal kpis={kpis} series={series} t={t} />
+          <KpiRow kpis={kpis} range={range} t={t} />
           <TimeFilter range={range} setRange={setRange} t={t} setTweak={setTweak} />
           <ChartsRow range={range} models={models} kpis={kpis} series={series} t={t} />
           <ModelTable models={models} total={kpis.cost} t={t} exampleHover={t.smartHighlight}
                       onRowClick={(m) => setSelModel({ ...m, share: m.cost / Math.max(kpis.cost, 0.0001) })} />
-          <ForecastSectionReal forecast={data.forecast} t={t} />
+          <ForecastSection t={t} />
           <LiveActivity t={t} />
         </main>
       )}
@@ -1433,15 +1477,15 @@ function App() {
         <TweakSection label="Tempo real" />
         <TweakToggle label="Live feed" value={t.liveFeed} onChange={(v) => setTweak('liveFeed', v)} />
         <TweakRadio label="Anima\xe7\xe3o" value={t.animLevel} options={[{ value: 'lively', label: 'Vivo' }, { value: 'subtle', label: 'Sutil' }, { value: 'minimal', label: 'M\xedn.' }]} onChange={(v) => setTweak('animLevel', v)} />
-        <TweakSection label="Navega\xe7\xe3o" />
+        <TweakSection label="Navega\xe7\xe3o &amp; estado" />
         <TweakToggle label="Command palette (⌘K)" value={t.commandPalette} onChange={(v) => setTweak('commandPalette', v)} />
+        <TweakRadio label="Estado" value={t.appState} options={[{ value: 'data', label: 'Dados' }, { value: 'loading', label: 'Load' }, { value: 'empty', label: 'Vazio' }]} onChange={(v) => setTweak('appState', v)} />
         <TweakSection label="Visual" />
         <TweakColor label="Accent" value={t.accent} options={['#58a6ff', '#3fb950', '#bc8cff', '#f778ba']} onChange={(v) => setTweak('accent', v)} />
       </TweaksPanel>
     </div>
   );
 }
-
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 </script>
 </body>
