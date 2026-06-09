@@ -91,6 +91,8 @@ Before init() is called:
   bySession: Record<string, { costUSD, calls }>,
   byUser: Record<string, { costUSD, calls }>,
   byFeature: Record<string, { costUSD, calls }>,
+  byApp: Record<string, { costUSD, calls }>,
+  byMetadata: Record<string, Record<string, { costUSD, calls }>>,  — grouped by each custom metadata key → value → stats
   period: { from: string, to: string },
   pricesUpdatedAt?: string   — date of the price data in use (e.g. "2026-04-22"), absent if prices not loaded
 }
@@ -111,8 +113,9 @@ Before init() is called:
 - wrapDeepSeek<T>(client: T, tracker): WrappedOpenAI<T>     — alias for wrapOpenAI
 
 All wrappers:
-- Accept __sessionId, __userId, and __feature as extra fields in the request params
+- Accept __sessionId, __userId, __feature, and __metadata as extra fields in the request params
 - Strip those fields before forwarding to the real API
+- __metadata: Record<string, string> — arbitrary key-value tags for custom dimensions; appear in report.byMetadata and persisted in storage
 - wrapOpenAI covers: chat.completions.create (streaming + non-streaming) and embeddings.create
 - wrapOpenAI reasoning tokens: reads completion_tokens_details.reasoning_tokens; priced as output tokens (separate from completion_tokens in o1/o3/o4)
 - wrapOpenAI cached tokens: reads prompt_tokens_details.cached_tokens; priced at cachedInput rate (default 50% of input)
@@ -123,6 +126,23 @@ All wrappers:
 - Track cost after a successful call; do nothing if the API throws
 - Support streaming
 - record() is fire-and-forget — a storage failure never interrupts the API call
+
+## Custom Metadata
+
+Pass __metadata to any provider wrapper to tag calls with arbitrary key-value dimensions:
+  __metadata: { tenantId: 'acme', region: 'eu-west', plan: 'enterprise', experiment: 'prompt-v3' }
+
+- Keys and values are strings. Any number of keys per call.
+- All wrappers supported: wrapOpenAI, wrapAnthropic, wrapGemini, wrapDeepSeek.
+- Stored in every backend (SQLite: TEXT/JSON, Postgres: JSONB, MySQL: JSON, MongoDB: object field).
+- Appear in report.byMetadata[key][value] = { costUSD, calls }.
+- Dashboard shows a collapsible table per key automatically when metadata is present.
+- exportCSV() includes a metadata column (JSON-serialized).
+- CloudExporter sends metadata in the ingest payload.
+
+Example report access:
+  report.byMetadata['tenantId']['acme']  // { costUSD: 1.20, calls: 94 }
+  report.byMetadata['region']['eu-west'] // { costUSD: 0.52, calls: 38 }
 
 ## Prompt Caching Token Accounting
 
@@ -140,7 +160,8 @@ Anthropic caching: input_tokens, cache_read_input_tokens, cache_creation_input_t
 - Cost = input * price.input + cached * price.cachedInput + creation * price.cacheCreationInput
 
 ## UsageEntry fields
-model, inputTokens, outputTokens, reasoningTokens?, cachedTokens?, cacheCreationTokens?, costUSD, sessionId?, userId?, feature?, timestamp
+model, inputTokens, outputTokens, reasoningTokens?, cachedTokens?, cacheCreationTokens?, costUSD, sessionId?, userId?, feature?, appId?, metadata?, timestamp
+- metadata: Record<string, string> — arbitrary key-value tags set via __metadata in provider params
 
 ## IStorage interface
 All methods are sync-or-async (return T or Promise<T>):
@@ -157,13 +178,13 @@ Built-in implementations: MemoryStorage (default), SqliteStorage (requires bette
 - Peer dep: pg >= 8
 - Constructor: new PostgresStorage(pool: pg.Pool | pg.Client)
 - Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times (IF NOT EXISTS + incremental ALTER TABLE ADD COLUMN IF NOT EXISTS for databases created before v0.2.0/v0.3.0)
-- Schema: id BIGSERIAL, model TEXT, input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cached_tokens INT NOT NULL DEFAULT 0, cache_creation_tokens INT NOT NULL DEFAULT 0, cost_usd NUMERIC, session_id TEXT, user_id TEXT, feature TEXT, timestamp TIMESTAMPTZ
+- Schema: id BIGSERIAL, model TEXT, input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cached_tokens INT NOT NULL DEFAULT 0, cache_creation_tokens INT NOT NULL DEFAULT 0, cost_usd NUMERIC, session_id TEXT, user_id TEXT, feature TEXT, app_id TEXT, metadata JSONB, timestamp TIMESTAMPTZ
 
 ### MySQLStorage
 - Peer dep: mysql2 >= 3
 - Constructor: new MySQLStorage(pool: mysql2.Pool | mysql2.Connection)
 - Extra method: migrate() → Promise<void>  — creates tokenwatch_usage table; safe to call multiple times
-- Schema: id BIGINT UNSIGNED AUTO_INCREMENT, model VARCHAR(255), input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cached_tokens INT NOT NULL DEFAULT 0, cache_creation_tokens INT NOT NULL DEFAULT 0, cost_usd DECIMAL(18,8), session_id VARCHAR(255), user_id VARCHAR(255), feature VARCHAR(255), timestamp DATETIME(3)
+- Schema: id BIGINT UNSIGNED AUTO_INCREMENT, model VARCHAR(255), input_tokens INT, output_tokens INT, reasoning_tokens INT NOT NULL DEFAULT 0, cached_tokens INT NOT NULL DEFAULT 0, cache_creation_tokens INT NOT NULL DEFAULT 0, cost_usd DECIMAL(18,8), session_id VARCHAR(255), user_id VARCHAR(255), feature VARCHAR(255), app_id VARCHAR(255), metadata JSON, timestamp DATETIME(3)
 
 ### MongoStorage
 - Peer dep: mongodb >= 6

@@ -86,7 +86,12 @@ const res = await openai.chat.completions.create({
   // Optional — removed before sending to the API
   __sessionId: 'session_abc',
   __userId: 'user_123',
-  __feature: 'chat',       // tag calls by product feature → report.byFeature
+  __feature: 'chat',         // tag calls by product feature → report.byFeature
+  __metadata: {              // arbitrary custom dimensions → report.byMetadata
+    tenantId: 'acme-corp',
+    region: 'eu-west',
+    plan: 'enterprise',
+  },
 })
 // res is identical to the original OpenAI response — zero difference
 ```
@@ -291,6 +296,37 @@ The handler extracts `promptTokens` / `completionTokens` from `llmOutput.tokenUs
 
 ---
 
+## Custom Metadata
+
+Tag any call with arbitrary key-value dimensions using `__metadata`. Works with all provider wrappers (OpenAI, Anthropic, Gemini, DeepSeek):
+
+```ts
+await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [...],
+  __metadata: {
+    tenantId: 'acme-corp',   // group by tenant
+    region: 'eu-west',       // group by region
+    plan: 'enterprise',      // group by plan tier
+    experiment: 'prompt-v3', // A/B test tracking
+  },
+})
+```
+
+Custom dimensions appear in `report.byMetadata`, grouped by key → value → stats:
+
+```ts
+const report = await tracker.getReport()
+
+report.byMetadata['tenantId']['acme-corp'] // { costUSD: 1.20, calls: 94 }
+report.byMetadata['region']['eu-west']     // { costUSD: 0.52, calls: 38 }
+report.byMetadata['plan']['enterprise']    // { costUSD: 0.87, calls: 61 }
+```
+
+Metadata is persisted in every storage backend and exported in CSV (as a JSON column). The `tokenwatch dashboard` automatically shows a collapsible table per key when metadata is present.
+
+---
+
 ## Reports
 
 All report methods are async:
@@ -307,6 +343,10 @@ const report = await tracker.getReport()
 //   bySession: { 'session_abc': { costUSD: 0.045, calls: 4 } },
 //   byUser:    { 'user_123':    { costUSD: 0.087, calls: 7 } },
 //   byFeature: { 'chat': { costUSD: 0.062, calls: 5 }, 'rag': { costUSD: 0.025, calls: 3 } },
+//   byMetadata: {
+//     'tenantId': { 'acme-corp': { costUSD: 0.072, calls: 9 } },
+//     'region':   { 'eu-west': { costUSD: 0.052, calls: 6 }, 'us-east': { costUSD: 0.035, calls: 5 } },
+//   },
 //   period: { from: '2026-04-16T10:00:00Z', to: '2026-04-16T11:00:00Z' },
 //   pricesUpdatedAt: '2026-04-22'   // date of the price data in use
 // }
