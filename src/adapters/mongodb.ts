@@ -38,6 +38,7 @@ interface MongoDocument {
   userId?: string | null
   feature?: string | null
   appId?: string | null
+  metadata?: Record<string, string> | null
   timestamp: string
 }
 
@@ -89,6 +90,7 @@ export class MongoStorage implements IStorage {
         userId: entry.userId ?? null,
         ...(entry.feature !== undefined && { feature: entry.feature }),
         ...(entry.appId !== undefined && { appId: entry.appId }),
+        ...(entry.metadata !== undefined && { metadata: entry.metadata }),
         timestamp: entry.timestamp,
       })
       .catch((err: unknown) => {
@@ -123,6 +125,7 @@ function docToEntry(doc: MongoDocument): UsageEntry {
     ...(doc.userId != null && { userId: doc.userId }),
     ...(doc.feature != null && { feature: doc.feature }),
     ...(doc.appId != null && { appId: doc.appId }),
+    ...(doc.metadata != null && { metadata: doc.metadata }),
     timestamp: doc.timestamp,
   }
 }

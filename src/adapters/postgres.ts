@@ -45,6 +45,7 @@ export class PostgresStorage implements IStorage {
         user_id               TEXT,
         feature               TEXT,
         app_id                TEXT,
+        metadata              JSONB,
         timestamp             TIMESTAMPTZ NOT NULL
       )
     `)
@@ -55,6 +56,7 @@ export class PostgresStorage implements IStorage {
       'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS cached_tokens INTEGER NOT NULL DEFAULT 0',
       'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS cache_creation_tokens INTEGER NOT NULL DEFAULT 0',
       'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS app_id TEXT',
+      'ALTER TABLE tokenwatch_usage ADD COLUMN IF NOT EXISTS metadata JSONB',
     ]) {
       await this.client.query(col).catch(() => { /* column already exists */ })
     }
@@ -65,8 +67,8 @@ export class PostgresStorage implements IStorage {
       .query(
         `INSERT INTO tokenwatch_usage
          (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
-          cost_usd, session_id, user_id, feature, app_id, timestamp)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          cost_usd, session_id, user_id, feature, app_id, metadata, timestamp)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           entry.model,
           entry.inputTokens,
@@ -79,6 +81,7 @@ export class PostgresStorage implements IStorage {
           entry.userId ?? null,
           entry.feature ?? null,
           entry.appId ?? null,
+          entry.metadata ?? null,
           entry.timestamp,
         ],
       )
@@ -122,6 +125,7 @@ function rowToEntry(r: Record<string, unknown>): UsageEntry {
     ...(r['user_id'] != null && { userId: r['user_id'] as string }),
     ...(r['feature'] != null && { feature: r['feature'] as string }),
     ...(r['app_id'] != null && { appId: r['app_id'] as string }),
+    ...(r['metadata'] != null && { metadata: r['metadata'] as Record<string, string> }),
     timestamp:
       r['timestamp'] instanceof Date
         ? (r['timestamp'] as Date).toISOString()

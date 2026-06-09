@@ -927,7 +927,65 @@ function ModelTable({ models, total, t, onRowClick, exampleHover }) {
     </section>
   );
 }
-Object.assign(window, { ModelTable });
+function MetaGroup({ label, rows, t }) {
+  const [open, setOpen] = useStateT(true);
+  const { fmtUSD, fmtInt } = window.TW;
+  const total = rows.reduce(function(s, r) { return s + r[1].costUSD; }, 0);
+  return (
+    <section className="tw-section">
+      <div className="tw-sec-head" style={{ cursor: 'pointer' }} onClick={() => setOpen(function(v) { return !v; })}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button className="tw-collapse" style={{ transform: open ? 'none' : 'rotate(-90deg)' }}><Ico.chevron /></button>
+          {label}
+        </h3>
+        <span className="tw-sec-sub">{rows.length + ' values \xb7 ' + fmtUSD(total, 4)}</span>
+      </div>
+      {open && (
+        <div className="tw-table-wrap">
+          <table className={'tw-table' + (t.density === 'compact' ? ' compact' : '')}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Value</th>
+                <th style={{ textAlign: 'right' }}>Cost</th>
+                <th style={{ textAlign: 'right' }}>Calls</th>
+                <th style={{ textAlign: 'right' }}>Avg / call</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(function(r) {
+                var val = r[0], stats = r[1];
+                return (
+                  <tr key={val} className="tw-row">
+                    <td>{val}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtUSD(stats.costUSD, 4)}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtInt(stats.calls)}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtUSD(stats.costUSD / Math.max(stats.calls, 1), 4)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MetadataSection({ byMetadata, t }) {
+  var keys = Object.keys(byMetadata || {});
+  if (keys.length === 0) return null;
+  return (
+    <div>
+      {keys.map(function(key) {
+        var group = byMetadata[key];
+        var rows = Object.entries(group).sort(function(a, b) { return b[1].costUSD - a[1].costUSD; });
+        return <MetaGroup key={key} label={key} rows={rows} t={t} />;
+      })}
+    </div>
+  );
+}
+
+Object.assign(window, { ModelTable, MetaGroup, MetadataSection });
 </script>
 
 <script type="text/babel">
@@ -1236,6 +1294,7 @@ Object.assign(window, {
     BASE_MODELS, RANGES, modelsForRange, kpisForRange,
     seriesForRange, seedFeed, makeCall, callsForModel,
     FEATURES, FEATURE_COLOR, BUDGET, _buildSeries: buildSeries,
+    byMetadata: {},
   },
 });
 
@@ -1280,6 +1339,7 @@ Object.assign(window, {
       var elapsed = window.TW.BUDGET.cycleDays - window.TW.BUDGET.daysLeft;
       window.TW.BUDGET.used = fc.burnRatePerHour * 24 * Math.max(elapsed, 1);
     }
+    if (r.byMetadata) window.TW.byMetadata = r.byMetadata;
     window.dispatchEvent(new CustomEvent('tw-data-update'));
   }
   var evtSource = null;
@@ -1422,6 +1482,10 @@ function App() {
 
   const models = kpis.models;
 
+  const byMetadata = useMemoApp(() => {
+    return window.TW.byMetadata || {};
+  }, [_sseV]);
+
   useEffectApp(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -1457,6 +1521,7 @@ function App() {
           <ChartsRow range={range} models={models} kpis={kpis} series={series} t={t} />
           <ModelTable models={models} total={kpis.cost} t={t} exampleHover={t.smartHighlight}
                       onRowClick={(m) => setSelModel({ ...m, share: m.cost / Math.max(kpis.cost, 0.0001) })} />
+          <MetadataSection byMetadata={byMetadata} t={t} />
           <ForecastSection t={t} />
           <LiveActivity t={t} />
         </main>

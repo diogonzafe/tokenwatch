@@ -285,6 +285,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     const byUser: Record<string, UserStats> = {}
     const byFeature: Record<string, FeatureStats> = {}
     const byApp: Record<string, AppStats> = {}
+    const byMetadata: Record<string, Record<string, { costUSD: number; calls: number }>> = {}
 
     let totalInput = 0
     let totalOutput = 0
@@ -338,6 +339,16 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
         a.costUSD += e.costUSD
         a.calls += 1
       }
+
+      // byMetadata
+      if (e.metadata) {
+        for (const [key, val] of Object.entries(e.metadata)) {
+          const group = (byMetadata[key] ??= {})
+          const slot = (group[val] ??= { costUSD: 0, calls: 0 })
+          slot.costUSD += e.costUSD
+          slot.calls += 1
+        }
+      }
     }
 
     // When filtering, use the actual first entry's timestamp as period.from
@@ -353,6 +364,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
       byUser,
       byFeature,
       byApp,
+      byMetadata,
       period: { from: periodFrom, to: lastTimestamp },
       ...(pricesUpdatedAt ? { pricesUpdatedAt } : {}),
     }
@@ -475,7 +487,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
   async function exportCSV(): Promise<string> {
     const entries = await Promise.resolve(storage.getAll())
     const header =
-      'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature,appId'
+      'timestamp,model,inputTokens,outputTokens,reasoningTokens,cachedTokens,cacheCreationTokens,costUSD,sessionId,userId,feature,appId,metadata'
     const rows = entries.map((e) =>
       [
         csvEscape(e.timestamp),
@@ -490,6 +502,7 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
         csvEscape(e.userId ?? ''),
         csvEscape(e.feature ?? ''),
         csvEscape(e.appId ?? ''),
+        csvEscape(e.metadata ? JSON.stringify(e.metadata) : ''),
       ].join(','),
     )
     return [header, ...rows].join('\n')

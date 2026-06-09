@@ -46,10 +46,11 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
 
       return function (modelParams: { model: string } & Record<string, unknown>) {
         // Extract tracking meta from getGenerativeModel params
-        const { __sessionId, __userId, __feature, ...cleanedParams } = modelParams as typeof modelParams & TrackingMeta
+        const { __sessionId, __userId, __feature, __metadata, ...cleanedParams } = modelParams as typeof modelParams & TrackingMeta
         const feature = typeof __feature === 'string' ? __feature : undefined
         const sessionId = typeof __sessionId === 'string' ? __sessionId : undefined
         const userId = typeof __userId === 'string' ? __userId : undefined
+        const metadata = __metadata != null && typeof __metadata === 'object' ? __metadata as Record<string, string> : undefined
 
         const modelInstance = target.getGenerativeModel(cleanedParams as { model: string } & Record<string, unknown>)
         const modelId = modelParams.model
@@ -67,6 +68,7 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
                   ...(sessionId !== undefined && { sessionId }),
                   ...(userId !== undefined && { userId }),
                   ...(feature !== undefined && { feature }),
+                  ...(metadata !== undefined && { metadata }),
                 })
 
                 return result
@@ -88,6 +90,7 @@ export function wrapGemini<T extends GenAILike>(client: T, tracker: Tracker): T 
                       ...(sessionId !== undefined && { sessionId }),
                       ...(userId !== undefined && { userId }),
                       ...(feature !== undefined && { feature }),
+                      ...(metadata !== undefined && { metadata }),
                     })
                   })
                   .catch(() => {

@@ -30,6 +30,7 @@ export class CloudExporter implements IExporter {
         sessionId: entry.sessionId,
         userId: entry.userId,
         feature: entry.feature,
+        metadata: entry.metadata,
         timestamp: entry.timestamp,
       }),
     }).catch(() => {

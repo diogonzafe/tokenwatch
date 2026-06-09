@@ -34,7 +34,7 @@ describe('MySQLStorage', () => {
     storage.record(entry)
     expect(client.execute).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO tokenwatch_usage'),
-      [entry.model, entry.inputTokens, entry.outputTokens, 100, 0, 0, entry.costUSD, 'sess-1', 'user-1', 'chat', null, entry.timestamp],
+      [entry.model, entry.inputTokens, entry.outputTokens, 100, 0, 0, entry.costUSD, 'sess-1', 'user-1', 'chat', null, null, entry.timestamp],
     )
   })
 

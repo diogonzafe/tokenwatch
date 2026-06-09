@@ -103,6 +103,8 @@ export interface UsageEntry {
   feature?: string
   /** Application identifier — set once in TrackerConfig.appId and stamped on every entry */
   appId?: string
+  /** Arbitrary key-value tags for custom dimensions (e.g. tenantId, region, plan) */
+  metadata?: Record<string, string>
   timestamp: string
 }
 
@@ -151,6 +153,8 @@ export interface Report {
   byUser: Record<string, UserStats>
   byFeature: Record<string, FeatureStats>
   byApp: Record<string, AppStats>
+  /** Grouped by each custom metadata key → value → stats */
+  byMetadata: Record<string, Record<string, { costUSD: number; calls: number }>>
   period: { from: string; to: string }
   /** ISO date of the prices data in use (bundled or remote) */
   pricesUpdatedAt?: string
@@ -214,4 +218,6 @@ export interface TrackingMeta {
   __feature?: string
   /** Override the tracker-level appId for this specific call */
   __appId?: string
+  /** Arbitrary key-value tags for custom dimensions — appear in report.byMetadata */
+  __metadata?: Record<string, string>
 }

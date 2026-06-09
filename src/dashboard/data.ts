@@ -102,6 +102,7 @@ export async function getDashboardData(
   const byUser: Record<string, UserStats> = {}
   const byFeature: Record<string, FeatureStats> = {}
   const byApp: Record<string, AppStats> = {}
+  const byMetadata: Record<string, Record<string, { costUSD: number; calls: number }>> = {}
   let totalInput = 0
   let totalOutput = 0
   let totalCost = 0
@@ -144,6 +145,15 @@ export async function getDashboardData(
       a.costUSD += e.costUSD
       a.calls += 1
     }
+
+    if (e.metadata) {
+      for (const [key, val] of Object.entries(e.metadata)) {
+        const group = (byMetadata[key] ??= {})
+        const slot = (group[val] ??= { costUSD: 0, calls: 0 })
+        slot.costUSD += e.costUSD
+        slot.calls += 1
+      }
+    }
   }
 
   const now = new Date().toISOString()
@@ -158,6 +168,7 @@ export async function getDashboardData(
     byUser,
     byFeature,
     byApp,
+    byMetadata,
     period: { from: periodFrom, to: periodTo },
   }
 

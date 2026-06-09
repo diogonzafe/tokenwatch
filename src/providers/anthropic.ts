@@ -61,13 +61,15 @@ function extractMeta(params: Record<string, unknown>): {
   sessionId: string | undefined
   userId: string | undefined
   feature: string | undefined
+  metadata: Record<string, string> | undefined
 } {
-  const { __sessionId, __userId, __feature, ...cleaned } = params as Record<string, unknown> & TrackingMeta
+  const { __sessionId, __userId, __feature, __metadata, ...cleaned } = params as Record<string, unknown> & TrackingMeta
   return {
     cleaned,
     sessionId: typeof __sessionId === 'string' ? __sessionId : undefined,
     userId: typeof __userId === 'string' ? __userId : undefined,
     feature: typeof __feature === 'string' ? __feature : undefined,
+    metadata: __metadata != null && typeof __metadata === 'object' ? __metadata as Record<string, string> : undefined,
   }
 }
 
@@ -114,6 +116,7 @@ function trackWithMeta(
   feature: string | undefined,
   cachedTokens = 0,
   cacheCreationTokens = 0,
+  metadata?: Record<string, string>,
 ): void {
   // Anthropic thinking output is already included in outputTokens — no adjustment needed.
   // reasoningTokens here is an approximation (thinking chars ÷ 4) stored purely for
@@ -128,6 +131,7 @@ function trackWithMeta(
     ...(sessionId !== undefined && { sessionId }),
     ...(userId !== undefined && { userId }),
     ...(feature !== undefined && { feature }),
+    ...(metadata !== undefined && { metadata }),
   })
 }
 
@@ -140,6 +144,7 @@ async function* wrapStream(
   userId: string | undefined,
   feature: string | undefined,
   tracker: Tracker,
+  metadata?: Record<string, string>,
 ): AsyncGenerator<AnthropicStreamEvent> {
   let inputTokens = 0
   let outputTokens = 0
@@ -175,7 +180,7 @@ async function* wrapStream(
   // reasoningTokens is approximate and informational — Anthropic thinking output
   // is already included in outputTokens, so it is NOT added to cost by the tracker.
   const reasoningTokens = thinkingCharCount > 0 ? Math.round(thinkingCharCount / 4) : 0
-  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature, cachedTokens, cacheCreationTokens)
+  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature, cachedTokens, cacheCreationTokens, metadata)
 }
 
 // ─── Public wrapper ───────────────────────────────────────────────────────────
@@ -201,7 +206,7 @@ export function wrapAnthropic<T extends AnthropicLike>(
         return (target as unknown as Record<string | symbol, unknown>)[prop]
 
       return async function (params: Record<string, unknown>) {
-        const { cleaned, sessionId, userId, feature } = extractMeta(params)
+        const { cleaned, sessionId, userId, feature, metadata } = extractMeta(params)
         const model = typeof cleaned['model'] === 'string' ? cleaned['model'] : 'unknown'
 
         const result = await (target as MessagesLike).create(cleaned)
@@ -214,6 +219,7 @@ export function wrapAnthropic<T extends AnthropicLike>(
             userId,
             feature,
             tracker,
+            metadata,
           )
         }
 
@@ -231,6 +237,7 @@ export function wrapAnthropic<T extends AnthropicLike>(
           feature,
           cachedTokens,
           cacheCreationTokens,
+          metadata,
         )
 
         return result

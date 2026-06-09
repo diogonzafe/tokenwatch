@@ -79,13 +79,15 @@ function extractMeta(params: Record<string, unknown>): {
   sessionId: string | undefined
   userId: string | undefined
   feature: string | undefined
+  metadata: Record<string, string> | undefined
 } {
-  const { __sessionId, __userId, __feature, ...cleaned } = params as Record<string, unknown> & TrackingMeta
+  const { __sessionId, __userId, __feature, __metadata, ...cleaned } = params as Record<string, unknown> & TrackingMeta
   return {
     cleaned,
     sessionId: typeof __sessionId === 'string' ? __sessionId : undefined,
     userId: typeof __userId === 'string' ? __userId : undefined,
     feature: typeof __feature === 'string' ? __feature : undefined,
+    metadata: __metadata != null && typeof __metadata === 'object' ? __metadata as Record<string, string> : undefined,
   }
 }
 
@@ -117,6 +119,7 @@ function trackWithMeta(
   userId: string | undefined,
   feature: string | undefined,
   cachedTokens = 0,
+  metadata?: Record<string, string>,
 ): void {
   // OpenAI bills reasoning_tokens at output price, separately from completion_tokens.
   // We fold them into outputTokens so the cost is correct, and also store them in
@@ -130,6 +133,7 @@ function trackWithMeta(
     ...(sessionId !== undefined && { sessionId }),
     ...(userId !== undefined && { userId }),
     ...(feature !== undefined && { feature }),
+    ...(metadata !== undefined && { metadata }),
   })
 }
 
@@ -142,6 +146,7 @@ async function* wrapStream(
   userId: string | undefined,
   feature: string | undefined,
   tracker: Tracker,
+  metadata?: Record<string, string>,
 ): AsyncGenerator<StreamChunk> {
   let lastChunk: StreamChunk | undefined
   for await (const chunk of stream) {
@@ -155,7 +160,7 @@ async function* wrapStream(
         `Pass stream_options: { include_usage: true } to get accurate costs.`,
     )
   }
-  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature, cachedTokens)
+  trackWithMeta(tracker, model, inputTokens, outputTokens, reasoningTokens, sessionId, userId, feature, cachedTokens, metadata)
 }
 
 // ─── Public wrapper ───────────────────────────────────────────────────────────
@@ -175,7 +180,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
         return (target as unknown as Record<string | symbol, unknown>)[prop]
 
       return async function (params: Record<string, unknown>) {
-        const { cleaned, sessionId, userId, feature } = extractMeta(params)
+        const { cleaned, sessionId, userId, feature, metadata } = extractMeta(params)
         const model = typeof cleaned['model'] === 'string' ? cleaned['model'] : 'unknown'
 
         const result = await (target as CompletionsLike).create(cleaned)
@@ -188,6 +193,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
             userId,
             feature,
             tracker,
+            metadata,
           )
         }
 
@@ -203,6 +209,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
           userId,
           feature,
           cachedTokens,
+          metadata,
         )
 
         return result
@@ -225,7 +232,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
             return (target as unknown as Record<string | symbol, unknown>)[prop]
 
           return async function (params: Record<string, unknown>) {
-            const { cleaned, sessionId, userId, feature } = extractMeta(params)
+            const { cleaned, sessionId, userId, feature, metadata } = extractMeta(params)
             const model = typeof cleaned['model'] === 'string' ? cleaned['model'] : 'unknown'
 
             const result = await (target as EmbeddingsLike).create(cleaned)
@@ -233,7 +240,7 @@ export function wrapOpenAI<T extends OpenAILike>(client: T, tracker: Tracker): W
             const embedding = result as EmbeddingResponse
             const inputTokens = embedding.usage?.total_tokens ?? 0
             // Embeddings have no output tokens or reasoning tokens
-            trackWithMeta(tracker, embedding.model ?? model, inputTokens, 0, 0, sessionId, userId, feature)
+            trackWithMeta(tracker, embedding.model ?? model, inputTokens, 0, 0, sessionId, userId, feature, 0, metadata)
 
             return result
           }

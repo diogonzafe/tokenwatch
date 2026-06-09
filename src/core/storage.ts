@@ -75,6 +75,7 @@ export class SqliteStorage implements IStorage {
         user_id               TEXT,
         feature               TEXT,
         app_id                TEXT,
+        metadata              TEXT,
         timestamp             TEXT    NOT NULL
       )
     `)
@@ -96,6 +97,9 @@ export class SqliteStorage implements IStorage {
     if (!cols.includes('app_id')) {
       this.db.exec(`ALTER TABLE usage ADD COLUMN app_id TEXT`)
     }
+    if (!cols.includes('metadata')) {
+      this.db.exec(`ALTER TABLE usage ADD COLUMN metadata TEXT`)
+    }
   }
 
   record(entry: UsageEntry): void {
@@ -103,8 +107,8 @@ export class SqliteStorage implements IStorage {
       .prepare(
         `INSERT INTO usage
          (model, input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_creation_tokens,
-          cost_usd, session_id, user_id, feature, app_id, timestamp)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          cost_usd, session_id, user_id, feature, app_id, metadata, timestamp)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         entry.model,
@@ -118,6 +122,7 @@ export class SqliteStorage implements IStorage {
         entry.userId ?? null,
         entry.feature ?? null,
         entry.appId ?? null,
+        entry.metadata != null ? JSON.stringify(entry.metadata) : null,
         entry.timestamp,
       )
   }
@@ -135,6 +140,7 @@ export class SqliteStorage implements IStorage {
       user_id: string | null
       feature: string | null
       app_id: string | null
+      metadata: string | null
       timestamp: string
     }>
 
@@ -150,6 +156,7 @@ export class SqliteStorage implements IStorage {
       ...(r.user_id != null && { userId: r.user_id }),
       ...(r.feature != null && { feature: r.feature }),
       ...(r.app_id != null && { appId: r.app_id }),
+      ...(r.metadata != null && { metadata: JSON.parse(r.metadata) as Record<string, string> }),
       timestamp: r.timestamp,
     }))
   }

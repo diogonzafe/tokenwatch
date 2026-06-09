@@ -23,6 +23,7 @@ function emptyReport(): Report {
     byUser: {},
     byFeature: {},
     byApp: {},
+    byMetadata: {},
     period: { from: now, to: now },
   }
 }
