@@ -623,16 +623,19 @@ Reads the local SQLite database and prints:
 
 ### `tokenwatch dashboard`
 
-Spins up a local web server and opens a dark-themed dashboard with real-time cost data:
+Spins up a local web server and opens a dark-themed real-time dashboard:
 
-- **Overview cards** — total cost, tokens, calls, burn rate per hour
-- **Cost over time** — line chart bucketed by time (5min / 1h / 1day depending on filter)
-- **Model breakdown** — doughnut chart + table with cost share per model
-- **By user / feature** — collapsible tables, hidden when empty
-- **Cost forecast** — projected daily and monthly spend based on recent burn rate
-- **Time filter tabs** — 1h | 24h | 7d | 30d | All; updates chart and tables in real-time via SSE
+- **KPI cards** — 5 cards with inline sparklines: total cost, input tokens, output tokens, calls, burn rate/hr (with delta vs previous period)
+- **Budget bar** — monthly spend vs limit with projected overrun shading
+- **Model breakdown** — doughnut chart + sortable table; click any row to open a slide-over with last 5 calls, token split, avg cost/call and latency
+- **Time-series chart** — area chart bucketed by filter (5min / 1h / 1day)
+- **Live activity feed** — streaming call log with model, session, feature, cost; filter by All / Signal / Errors; pause/resume
+- **Cost forecast** — projected daily/monthly spend and what-if growth scenarios
+- **Time filter tabs** — 1h | 24h | 7d | 30d | All; SSE reconnects with new filter
+- **Tweaks panel** (⚙) — toggle live feed, sparklines, budget alerts, compare mode, animation level
+- **Command palette** (⌘K) — navigate, set range, inspect models, export CSV
 
-Data updates automatically every 3 seconds without refreshing the page. Zero external dependencies — pure Node.js HTTP server with Chart.js loaded from CDN.
+The dashboard opens instantly with rich baseline data — real values overlay as SSE data arrives. Data refreshes every 3 seconds without a page reload. Zero external runtime dependencies — pure Node.js HTTP with React 18 + Babel standalone (no build step).
 
 Works with **any storage backend** via `--db <url>`:
 

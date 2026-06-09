@@ -249,7 +249,7 @@ src/
   dashboard/
     data.ts               — getDashboardData(storage, filter?), buildTimeSeries(entries, sinceMs), parseSince(filter), getFingerprint(data)
     server.ts             — startDashboardServer(storage, port) — node:http SSE server
-    html.ts               — getHtml(port) → full dark-theme HTML string with Chart.js from CDN
+    html.ts               — getHtml(port) → full dark-theme HTML string; React 18 + Babel standalone (browser JSX); mock-data-first + SSE overlay architecture
   index.ts                — public exports
 bin/cli.ts                — CLI: sync | prices | report | dashboard | help
 prices.json               — bundled pricing data (200+ models, updated daily)
@@ -275,12 +275,19 @@ URL protocol auto-detection: postgres:// / postgresql:// → PostgresStorage (pe
 Missing peer dep → clear error with install command, process exits cleanly.
 
 ## Dashboard
-tokenwatch dashboard opens a dark-themed real-time web UI reading from ~/.tokenwatch/usage.db.
-Sections: overview cards (total cost, tokens, calls, burn rate/hr), cost over time line chart, model doughnut chart + breakdown table, by-user and by-feature collapsible tables, cost forecast (projected daily/monthly).
-Time filter tabs: 1h | 24h | 7d | 30d | All — switch without page reload via SSE reconnect.
+tokenwatch dashboard opens a dark-themed React 18 web UI (mock-data-first — populates immediately with realistic baseline data, then SSE overlays real values).
+Sections:
+- KPI row: 5 cards with inline sparklines — total cost, input tokens, output tokens, total calls, burn rate/hr (with delta vs previous period)
+- Budget bar: monthly spend vs limit with projected overrun shading and marker
+- Model breakdown: doughnut chart + sortable table; click any row → slide-over detail panel (last 5 calls, token split, avg cost/call, latency)
+- Time-series area chart: bucketed by filter (1h → 5min, 24h → 1h, 7d/30d/All → 1-day)
+- Live activity feed: streaming call log with time, model, session, feature, cost; filterable (All / Signal / Errors); pause/resume; collapse
+- Cost forecast: projected daily/monthly and scenario slider (growth %)
+Time filter tabs: 1h | 24h | 7d | 30d | All — SSE reconnects with new filter on tab change.
+Tweaks panel (⚙ button): toggle live feed, sparklines, budget alerts, compare mode, command palette, animation level (off/subtle/full), forecast scenario.
+Command palette (⌘K): navigate sessions/users/features, set range, inspect models, export CSV.
 SSE: server polls storage every 3s, sends data only when fingerprint changes (totalCostUSD + totalTokens.input + timeSeries.length).
-Bucket intervals: 1h filter → 5-min buckets, 24h → 1h buckets, 7d/30d/all → 1-day buckets.
-Zero new runtime dependencies: node:http only. Chart.js v4 from CDN (jsdelivr).
+UI stack: React 18 + Babel standalone (browser-compiled JSX, no build step). node:http SSE only — zero new runtime dependencies.
 Port conflict: EADDRINUSE → helpful message + process.exit(1).
 
 ## Config validation
