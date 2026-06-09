@@ -75,6 +75,10 @@ export interface TrackerConfig {
   anomalyDetection?: AnomalyDetectionConfig
   /** Custom exporter called after every tracked call (e.g. OTelExporter) */
   exporter?: IExporter
+  /** TokenWatch Cloud API key — mirrors every tracked call to the cloud dashboard (fire-and-forget) */
+  cloudApiKey?: string
+  /** Override the cloud ingest endpoint (default: https://api.tokenwatch.dev/v1/ingest) */
+  cloudEndpoint?: string
 }
 
 // ─── Usage / storage entries ──────────────────────────────────────────────────

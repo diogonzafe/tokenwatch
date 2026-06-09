@@ -19,6 +19,7 @@ import type {
   IExporter,
 } from '../types/index.js'
 import { resolvePrice, findPrice, calculateCost } from './pricing.js'
+import { CloudExporter } from '../exporters/cloud.js'
 import { maybeSuggestCheaperModel } from './suggestions.js'
 import { createStorage } from './storage.js'
 import { getRemotePrices } from './sync.js'
@@ -77,6 +78,8 @@ const TrackerConfigSchema = z.object({
     typeof (v as IExporter).export === 'function'
   )).optional(),
   appId: z.string().optional(),
+  cloudApiKey: z.string().optional(),
+  cloudEndpoint: z.string().url().optional(),
 })
 
 export function createTracker(config: TrackerConfig = {}): Tracker {
@@ -98,12 +101,18 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     anomalyDetection,
     exporter,
     appId,
+    cloudApiKey,
+    cloudEndpoint,
   } = parsed.data
 
   const storage: IStorage =
     typeof storageOption === 'object'
       ? storageOption
       : createStorage(storageOption)
+
+  const cloudExporter = cloudApiKey
+    ? new CloudExporter(cloudApiKey, cloudEndpoint)
+    : null
 
   // Fetch remote prices in the background — bundled prices are used as fallback
   // until the sync resolves. Negligible overhead added to createTracker().
@@ -175,6 +184,9 @@ export function createTracker(config: TrackerConfig = {}): Tracker {
     storage.record(full)
     if (exporter) {
       Promise.resolve(exporter.export(full)).catch(() => { /* fire-and-forget */ })
+    }
+    if (cloudExporter) {
+      cloudExporter.export(full)
     }
     maybeFireAlerts(full)
     if (anomalyDetection) maybeDetectAnomaly(full)
