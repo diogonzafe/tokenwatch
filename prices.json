@@ -1423,6 +1423,21 @@
       "cachedInput": 1,
       "cacheCreationInput": 12.5,
       "maxInputTokens": 1000000
+    },
+    "text-embedding-3-small": {
+      "input": 0.02,
+      "output": 0,
+      "maxInputTokens": 8191
+    },
+    "text-embedding-3-large": {
+      "input": 0.13,
+      "output": 0,
+      "maxInputTokens": 8191
+    },
+    "text-embedding-ada-002": {
+      "input": 0.10,
+      "output": 0,
+      "maxInputTokens": 8191
     }
   }
 }
