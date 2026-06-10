@@ -1295,6 +1295,7 @@ Object.assign(window, {
     seriesForRange, seedFeed, makeCall, callsForModel,
     FEATURES, FEATURE_COLOR, BUDGET, _buildSeries: buildSeries,
     byMetadata: {},
+    _sseStatus: 'pending',
   },
 });
 
@@ -1317,7 +1318,11 @@ Object.assign(window, {
   }
   function applySSEData(data) {
     var r = data.report, fc = data.forecast, ts = data.timeSeries || [];
-    if (!r || !r.byModel || Object.keys(r.byModel).length === 0) return;
+    if (!r || !r.byModel || Object.keys(r.byModel).length === 0) {
+      window.TW._sseStatus = 'empty';
+      window.dispatchEvent(new CustomEvent('tw-data-update'));
+      return;
+    }
     var mods = buildRealModels(r.byModel);
     var totalCalls = mods.reduce(function(s, m) { return s + m.calls; }, 0);
     var totalCost = r.totalCostUSD || 0;
@@ -1340,6 +1345,7 @@ Object.assign(window, {
       window.TW.BUDGET.used = fc.burnRatePerHour * 24 * Math.max(elapsed, 1);
     }
     if (r.byMetadata) window.TW.byMetadata = r.byMetadata;
+    window.TW._sseStatus = 'data';
     window.dispatchEvent(new CustomEvent('tw-data-update'));
   }
   var evtSource = null;
@@ -1486,6 +1492,10 @@ function App() {
     return window.TW.byMetadata || {};
   }, [_sseV]);
 
+  const sseStatus = useMemoApp(() => {
+    return window.TW._sseStatus || 'pending';
+  }, [_sseV]);
+
   useEffectApp(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -1509,9 +1519,9 @@ function App() {
   return (
     <div className="tw-root" style={{ '--accent': t.accent }}>
       <Header t={t} onOpenPalette={() => setPaletteOpen(true)} />
-      {t.appState === 'loading' ? (
+      {t.appState === 'loading' || sseStatus === 'pending' ? (
         <main className="tw-main"><LoadingSkeleton /></main>
-      ) : t.appState === 'empty' ? (
+      ) : t.appState === 'empty' || sseStatus === 'empty' ? (
         <main className="tw-main"><EmptyState /></main>
       ) : (
         <main className="tw-main">
