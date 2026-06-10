@@ -21,6 +21,7 @@ export interface DashboardData {
   forecast: CostForecast
   timeSeries: TimeSeriesBucket[]
   lastUpdated: string
+  recentEntries: UsageEntry[]
 }
 
 /**
@@ -216,5 +217,9 @@ export async function getDashboardData(
 
   const timeSeries = buildTimeSeries(allEntries, sinceMs)
 
-  return { report, forecast, timeSeries, lastUpdated: now }
+  const recentEntries = [...entries]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 40)
+
+  return { report, forecast, timeSeries, lastUpdated: now, recentEntries }
 }

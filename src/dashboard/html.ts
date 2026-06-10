@@ -1059,13 +1059,28 @@ Object.assign(window, { SlideOver });
 const { useState: useStateA, useEffect: useEffectA, useRef: useRefA } = React;
 function LiveActivity({ t }) {
   const { seedFeed, makeCall, fmtUSD, fmtInt, fmtAgo } = window.TW;
-  const [feed, setFeed] = useStateA(() => seedFeed(14));
+  const [feed, setFeed] = useStateA(() => {
+    const rf = window.TW.recentFeed;
+    return (rf && rf.length > 0) ? rf : seedFeed(14);
+  });
+  const [hasRealData, setHasRealData] = useStateA(() => {
+    const rf = window.TW.recentFeed;
+    return !!(rf && rf.length > 0);
+  });
   const [now, setNow] = useStateA(Date.now());
   const [paused, setPaused] = useStateA(false);
   const [collapsed, setCollapsed] = useStateA(false);
   const [filter, setFilter] = useStateA('all');
   const seedRef = useRefA(5000);
-  const streaming = t.liveFeed && t.animLevel !== 'minimal' && !paused;
+  const streaming = !hasRealData && t.liveFeed && t.animLevel !== 'minimal' && !paused;
+  useEffectA(() => {
+    function onUpdate() {
+      const rf = window.TW.recentFeed;
+      if (rf && rf.length > 0) { setFeed(rf); setHasRealData(true); }
+    }
+    window.addEventListener('tw-data-update', onUpdate);
+    return () => window.removeEventListener('tw-data-update', onUpdate);
+  }, []);
   useEffectA(() => {
     if (!streaming) return;
     const iv = setInterval(() => {
@@ -1088,9 +1103,9 @@ function LiveActivity({ t }) {
       <div className="tw-sec-head">
         <div className="tw-act-title">
           <button className="tw-collapse" onClick={() => setCollapsed((v) => !v)} style={{ transform: collapsed ? 'rotate(-90deg)' : 'none' }}><Ico.chevron /></button>
-          <span className={'tw-live-dot' + (streaming ? ' on' : '')} />
+          <span className={'tw-live-dot' + ((streaming || hasRealData) ? ' on' : '')} />
           <h3>Live activity</h3>
-          <span className="tw-sec-sub">{streaming ? 'streaming' : t.liveFeed ? 'paused' : 'static'}</span>
+          <span className="tw-sec-sub">{hasRealData ? 'live' : streaming ? 'streaming' : t.liveFeed ? 'paused' : 'static'}</span>
         </div>
         <div className="tw-act-controls">
           <div className="tw-seg-sm">
@@ -1098,7 +1113,7 @@ function LiveActivity({ t }) {
               <button key={k} className={filter === k ? 'on' : ''} onClick={() => setFilter(k)}>{l}</button>
             ))}
           </div>
-          {t.liveFeed && (
+          {t.liveFeed && !hasRealData && (
             <button className="tw-act-pause" onClick={() => setPaused((p) => !p)}>{paused ? '▶ Resume' : '❚❚ Pause'}</button>
           )}
         </div>
@@ -1295,6 +1310,7 @@ Object.assign(window, {
     seriesForRange, seedFeed, makeCall, callsForModel,
     FEATURES, FEATURE_COLOR, BUDGET, _buildSeries: buildSeries,
     byMetadata: {},
+    recentFeed: [],
     _sseStatus: 'pending',
   },
 });
@@ -1302,6 +1318,33 @@ Object.assign(window, {
 // SSE overlay — patches window.TW functions when real data arrives
 (function () {
   var MC = ['#bc8cff','#3fb950','#58a6ff','#f778ba','#e3b341','#56d4dd','#79c0ff','#ffa657','#ff7b72','#a5d6ff'];
+  var _realId = 1000000;
+  function modelColorFor(id) {
+    var ci = 0;
+    for (var i = 0; i < id.length; i++) ci = (ci * 31 + id.charCodeAt(i)) % MC.length;
+    return MC[Math.abs(ci) % MC.length];
+  }
+  function entryToFeedItem(entry) {
+    var feat = entry.feature || 'chat';
+    var featureColor = (window.TW.FEATURE_COLOR || {})[feat] || '#58a6ff';
+    var bm = (window.TW.BASE_MODELS || []).find(function(m) { return m.id === entry.model; });
+    var mColor = bm ? bm.color : modelColorFor(entry.model);
+    return {
+      id: ++_realId,
+      ts: new Date(entry.timestamp).getTime(),
+      model: entry.model,
+      modelColor: mColor,
+      session: entry.sessionId || '—',
+      feature: feat,
+      featureColor: featureColor,
+      inTok: entry.inputTokens || 0,
+      outTok: entry.outputTokens || 0,
+      cost: entry.costUSD || 0,
+      latency: 0,
+      status: 'ok',
+      fresh: false,
+    };
+  }
   function guessProv(id) {
     if (/claude/i.test(id)) return 'Anthropic';
     if (/gpt|o1|o3|o4/i.test(id)) return 'OpenAI';
@@ -1345,6 +1388,9 @@ Object.assign(window, {
       window.TW.BUDGET.used = fc.burnRatePerHour * 24 * Math.max(elapsed, 1);
     }
     if (r.byMetadata) window.TW.byMetadata = r.byMetadata;
+    if (data.recentEntries && data.recentEntries.length > 0) {
+      window.TW.recentFeed = data.recentEntries.map(entryToFeedItem);
+    }
     window.TW._sseStatus = 'data';
     window.dispatchEvent(new CustomEvent('tw-data-update'));
   }
