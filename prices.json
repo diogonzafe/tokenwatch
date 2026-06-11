@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-10",
+  "updated_at": "2026-06-11",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1435,7 +1435,7 @@
       "maxInputTokens": 8191
     },
     "text-embedding-ada-002": {
-      "input": 0.10,
+      "input": 0.1,
       "output": 0,
       "maxInputTokens": 8191
     }
