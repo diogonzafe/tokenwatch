@@ -346,6 +346,52 @@ export function getHtml(_port: number): string {
     border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;background:transparent}
   .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
   .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+
+  /* ── Page header / stat strip ── */
+  .tw-pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:2px}
+  .tw-page-title{font-size:20px;font-weight:600;letter-spacing:-.01em}
+  .tw-page-sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .tw-pagehead-r{display:flex;align-items:center;gap:10px}
+  .tw-pagesearch{display:flex;align-items:center;gap:8px;height:32px;padding:0 11px;width:220px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+  .tw-pagesearch input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font-size:12.5px;font-family:var(--sans)}
+  .tw-statstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .tw-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:0}
+  .tw-stat-l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .tw-stat-v{font-size:18px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tw-stat-sub{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tw-feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:900px){.tw-feat-grid{grid-template-columns:repeat(2,1fr)}}
+  .tw-feat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;flex-direction:column;gap:9px}
+  .tw-feat-card-top{display:flex;align-items:center;justify-content:space-between}
+  .tw-feat-cost{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+  .tw-feat-meta{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+  .tw-feat-bar{height:5px;background:var(--border-muted);border-radius:3px;overflow:hidden}
+  .tw-feat-bar div{height:100%;border-radius:3px}
+  .tw-feat-foot{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted);padding-top:2px;border-top:1px solid var(--border-muted)}
+  .tw-dim-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:0 2px}
+  .tw-dim-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tw-dim-chip{display:flex;align-items:center;gap:7px;height:30px;padding:0 11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--sans)}
+  .tw-dim-chip:hover{color:var(--text);border-color:#444c56}
+  .tw-dim-chip.on{color:var(--text);border-color:var(--accent);background:rgba(88,166,255,.08)}
+  .tw-dim-chip .cnt{font-size:10.5px;color:var(--muted);background:var(--border-muted);border-radius:5px;padding:0 5px;min-width:16px;text-align:center}
+  .tw-dim-chip.on .cnt{background:rgba(88,166,255,.22);color:#9cc8ff}
+  .tw-dim-chip .mtag{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#bc8cff;border:1px solid rgba(188,140,255,.4);border-radius:4px;padding:0 4px}
+  .tw-dim-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border-muted)}
+  .tw-dim-head-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tw-dim-name{font-size:14px;font-weight:600}
+  .tw-dim-meta{font-size:11.5px;color:var(--muted)}
+  .tw-code{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(88,166,255,.1);border-radius:4px;padding:1px 5px}
+  .tw-meta-cell{display:flex;align-items:center;gap:9px}
+  .tw-meta-val{font-family:var(--mono);font-size:12.5px;color:var(--text)}
+  .tw-cell-user{font-size:12.5px;color:var(--text);font-weight:500}
+  .tw-cell-sub{font-size:10.5px;color:var(--muted);font-family:var(--mono)}
+  .tw-user-cell{display:flex;align-items:center;gap:10px}
+  .tw-sort{color:var(--accent);font-size:10px}
+  .tw-th-sort{display:flex;align-items:center;gap:4px;cursor:pointer}
+  .tw-th-sort:hover{color:var(--text)}
+  .tw-empty-hint{display:flex;flex-direction:column;align-items:center;gap:10px;padding:60px 20px;text-align:center}
+  .tw-empty-hint h2{font-size:18px;margin:0}
+  .tw-empty-hint p{max-width:400px;color:var(--muted);font-size:13px;margin:0}
 </style>
 </head>
 <body>
@@ -699,21 +745,14 @@ const Ico = {
   warn: (p) => <svg width="13" height="13" viewBox="0 0 14 14" {...p}><path d="M7 1.5 13 12H1z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" /><path d="M7 5.5v3M7 10.2v.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>,
   check: (p) => <svg width="13" height="13" viewBox="0 0 14 14" {...p}><path d="M2.5 7.5 5.5 10.5 11.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>,
 };
-function Header({ t, onOpenPalette }) {
-  const [wsOpen, setWsOpen] = useStateC(false);
-  const nav = ['Overview', 'Sessions', 'Users', 'Features', 'Settings'];
+function Header({ t, onOpenPalette, view, setView }) {
+  const nav = [['overview','Overview'],['sessions','Sessions'],['users','Users'],['features','Features'],['breakdown','Breakdown']];
   return (
     <header className="tw-header">
       <div className="tw-hgroup">
         <div className="tw-logo">token<span>watch</span></div>
-        <button className="tw-ws" onClick={() => setWsOpen((v) => !v)}>
-          <span className="tw-ws-dot" />
-          <span>tokenwatch</span>
-          <span className="tw-ws-env">local</span>
-          <Ico.chevron style={{ color: '#7d8590' }} />
-        </button>
         <nav className="tw-nav">
-          {nav.map((n, i) => <a key={n} className={i === 0 ? 'on' : ''} href="#" onClick={(e) => e.preventDefault()}>{n}</a>)}
+          {nav.map(([v, label]) => <a key={v} className={view === v ? 'on' : ''} href="#" onClick={(e) => { e.preventDefault(); setView(v); }}>{label}</a>)}
         </nav>
       </div>
       <div className="tw-hgroup">
@@ -992,7 +1031,7 @@ Object.assign(window, { ModelTable, MetaGroup, MetadataSection });
 // tw-panel.jsx
 const { useEffect: useEffectP } = React;
 function SlideOver({ model, onClose, t }) {
-  const { fmtInt, fmtUSD, callsForModel, fmtAgo } = window.TW;
+  const { fmtInt, fmtUSD, fmtAgo } = window.TW;
   useEffectP(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -1000,7 +1039,7 @@ function SlideOver({ model, onClose, t }) {
   }, [onClose]);
   const open = !!model;
   const m = model;
-  const calls = m ? callsForModel(m.id, 5) : [];
+  const calls = m ? (window.TW.recentFeed || []).filter((c) => c.model === m.id).slice(0, 5) : [];
   const totalIn = m ? m.inTok : 0, totalOut = m ? m.outTok : 0;
   return (
     <>
@@ -1026,25 +1065,29 @@ function SlideOver({ model, onClose, t }) {
             <div className="tw-so-metarow">
               <div><span className="tw-so-meta-l">In tokens</span><span className="tw-so-meta-v">{fmtInt(totalIn)}</span></div>
               <div><span className="tw-so-meta-l">Out tokens</span><span className="tw-so-meta-v">{fmtInt(totalOut)}</span></div>
-              <div><span className="tw-so-meta-l">Cost / call</span><span className="tw-so-meta-v">{fmtUSD(m.cost / Math.max(m.calls, 1), 4)}</span></div>
+              <div><span className="tw-so-meta-l">Reasoning</span><span className="tw-so-meta-v">{fmtInt(m.tokens ? m.tokens.reasoning : 0)}</span></div>
             </div>
-            <div className="tw-so-section-label">Last 5 calls (estimated)</div>
-            <div className="tw-so-calls">
-              {calls.map((c) => (
-                <div key={c.id} className="tw-so-call">
-                  <div className="tw-so-call-top">
-                    <span className="tw-so-call-time">{fmtAgo(c.secondsAgo)}</span>
-                    <span className="tw-feat" style={{ color: c.featureColor, borderColor: c.featureColor + '55' }}>{c.feature}</span>
-                    <span className="tw-so-call-cost">{fmtUSD(c.cost, 4)}</span>
-                  </div>
-                  <div className="tw-so-call-bot">
-                    <span>{fmtInt(c.inTok)} in &middot; {fmtInt(c.outTok)} out</span>
-                    <span className="tw-so-call-lat">{c.latency}ms{c.status === 'slow' ? ' · slow' : c.status === 'error' ? ' · error' : ''}</span>
-                  </div>
+            {calls.length > 0 && (
+              <>
+                <div className="tw-so-section-label">Recent calls (last 40 entries)</div>
+                <div className="tw-so-calls">
+                  {calls.map((c) => (
+                    <div key={c.id} className="tw-so-call">
+                      <div className="tw-so-call-top">
+                        <span className="tw-so-call-time">{fmtAgo(Math.round((Date.now() - c.ts) / 1000))}</span>
+                        {c.feature && c.feature !== '—' && <span className="tw-feat" style={{ color: c.featureColor, borderColor: c.featureColor + '55' }}>{c.feature}</span>}
+                        <span className="tw-so-call-cost">{fmtUSD(c.cost, 4)}</span>
+                      </div>
+                      <div className="tw-so-call-bot">
+                        <span>{fmtInt(c.inTok)} in &middot; {fmtInt(c.outTok)} out</span>
+                        {c.session && c.session !== '—' && <span className="tw-cell-sub">{c.session}</span>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <button className="tw-so-viewall">View all {fmtInt(m.calls)} calls <Ico.arrow /></button>
+              </>
+            )}
+            {calls.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12, padding: '12px 0' }}>No recent entries for this model in the last 40 tracked calls.</div>}
           </div>
         )}
       </aside>
@@ -1149,13 +1192,17 @@ function CommandPalette({ open, onClose, onAction }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
   const items = [
+    { g: 'Navigate', label: 'Overview', act: { view: 'overview' } },
+    { g: 'Navigate', label: 'Sessions', act: { view: 'sessions' } },
+    { g: 'Navigate', label: 'Users', act: { view: 'users' } },
+    { g: 'Navigate', label: 'Features', act: { view: 'features' } },
+    { g: 'Navigate', label: 'Breakdown', act: { view: 'breakdown' } },
     { g: 'Filter', label: 'Set range: Last 1h', act: { range: '1h' } },
     { g: 'Filter', label: 'Set range: Last 24h', act: { range: '24h' } },
     { g: 'Filter', label: 'Set range: Last 7 days', act: { range: '7d' } },
     { g: 'Filter', label: 'Set range: Last 30 days', act: { range: '30d' } },
     { g: 'Filter', label: 'Set range: All time', act: { range: 'All' } },
     { g: 'Action', label: 'Export CSV', hint: '⌘E' },
-    { g: 'Action', label: 'Create budget alert' },
   ];
   const filtered = items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase()));
   if (!open) return null;
@@ -1309,7 +1356,8 @@ Object.assign(window, {
     BASE_MODELS, RANGES, modelsForRange, kpisForRange,
     seriesForRange, seedFeed, makeCall, callsForModel,
     FEATURES, FEATURE_COLOR, BUDGET, _buildSeries: buildSeries,
-    byMetadata: {},
+    byMetadata: {}, byModel: {}, bySession: {}, byUser: {}, byFeature: {}, byApp: {},
+    totalCostUSD: 0,
     recentFeed: [],
     _sseStatus: 'pending',
   },
@@ -1335,6 +1383,7 @@ Object.assign(window, {
       model: entry.model,
       modelColor: mColor,
       session: entry.sessionId || '—',
+      userId: entry.userId || null,
       feature: feat,
       featureColor: featureColor,
       inTok: entry.inputTokens || 0,
@@ -1388,6 +1437,12 @@ Object.assign(window, {
       window.TW.BUDGET.used = fc.burnRatePerHour * 24 * Math.max(elapsed, 1);
     }
     if (r.byMetadata) window.TW.byMetadata = r.byMetadata;
+    window.TW.byModel = r.byModel || {};
+    window.TW.bySession = r.bySession || {};
+    window.TW.byUser = r.byUser || {};
+    window.TW.byFeature = r.byFeature || {};
+    window.TW.byApp = r.byApp || {};
+    window.TW.totalCostUSD = totalCost;
     if (data.recentEntries && data.recentEntries.length > 0) {
       window.TW.recentFeed = data.recentEntries.map(entryToFeedItem);
     }
@@ -1408,6 +1463,401 @@ Object.assign(window, {
   window.__twSSEConnect = connect;
   connect('24h');
 })();
+</script>
+
+<script type="text/babel">
+// tw-pages.jsx — real-data pages (Sessions, Users, Features, Breakdown, EntityDrawer)
+const { useState: useStateP, useMemo: useMemoP, useEffect: useEffectP2 } = React;
+const BDMC = ['#bc8cff','#3fb950','#58a6ff','#f778ba','#e3b341','#56d4dd','#79c0ff','#ffa657','#ff7b72','#a5d6ff'];
+function bdColor(id, idx) {
+  if (idx !== undefined) return BDMC[idx % BDMC.length];
+  let ci = 0; for (let i = 0; i < id.length; i++) ci = (ci * 31 + id.charCodeAt(i)) % BDMC.length;
+  return BDMC[Math.abs(ci) % BDMC.length];
+}
+
+function PageHead({ title, sub, search, setSearch, right }) {
+  return (
+    <div className="tw-pagehead">
+      <div><h2 className="tw-page-title">{title}</h2><div className="tw-page-sub">{sub}</div></div>
+      <div className="tw-pagehead-r">
+        {right}
+        {setSearch != null && (
+          <div className="tw-pagesearch">
+            <Ico.search style={{ color: '#7d8590' }} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter…" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+function StatStrip({ items }) {
+  return (
+    <div className="tw-statstrip">
+      {items.map((it, i) => (
+        <div key={i} className="tw-stat">
+          <div className="tw-stat-l">{it.label}</div>
+          <div className="tw-stat-v" style={it.color ? { color: it.color } : null}>{it.value}</div>
+          {it.sub && <div className="tw-stat-sub">{it.sub}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+function useSort(initialKey) {
+  const [sort, setSort] = useStateP({ key: initialKey, dir: -1 });
+  const click = (key) => setSort((s) => s.key === key ? { key, dir: -s.dir } : { key, dir: -1 });
+  const apply = (rows) => [...rows].sort((a, b) => {
+    const A = a[sort.key], B = b[sort.key];
+    if (typeof A === 'string') return A.localeCompare(B) * sort.dir;
+    return ((A || 0) - (B || 0)) * sort.dir;
+  });
+  return { sort, click, apply };
+}
+function SortTh({ k, label, align, s }) {
+  return (
+    <th style={{ textAlign: align || 'left', cursor: 'pointer' }} onClick={() => s.click(k)}>
+      <span className="tw-th-sort" style={{ justifyContent: align === 'right' ? 'flex-end' : 'flex-start' }}>
+        {label}{s.sort.key === k && <span className="tw-sort">{s.sort.dir < 0 ? '▾' : '▴'}</span>}
+      </span>
+    </th>
+  );
+}
+function EmptyHint({ icon, title, desc }) {
+  return (
+    <div className="tw-empty-hint">
+      {icon && <div style={{ fontSize: 32 }}>{icon}</div>}
+      <h2>{title}</h2>
+      <p>{desc}</p>
+    </div>
+  );
+}
+
+// ── Sessions ─────────────────────────────────────────────────────────────────
+function SessionsPage({ _sseV, onInspect }) {
+  const { fmtUSD, fmtInt } = window.TW;
+  const [search, setSearch] = useStateP('');
+  const s = useSort('cost');
+  const rows = useMemoP(() => {
+    const data = window.TW.bySession || {};
+    const feed = window.TW.recentFeed || [];
+    const meta = {};
+    feed.forEach((c) => {
+      if (c.session && c.session !== '—' && !meta[c.session])
+        meta[c.session] = { model: c.model, modelColor: c.modelColor, feature: c.feature, featureColor: c.featureColor, userId: c.userId };
+    });
+    return Object.entries(data).map(([id, st]) => {
+      const m = meta[id] || {};
+      return { id, cost: st.costUSD, calls: st.calls, avg: st.costUSD / Math.max(st.calls, 1),
+        model: m.model || null, modelColor: m.modelColor || '#484f58',
+        feature: m.feature || null, featureColor: m.featureColor || '#484f58',
+        userId: m.userId || null };
+    });
+  }, [_sseV]);
+  const filtered = rows.filter((x) =>
+    x.id.toLowerCase().includes(search.toLowerCase()) ||
+    (x.userId && x.userId.toLowerCase().includes(search.toLowerCase())) ||
+    (x.feature && x.feature.toLowerCase().includes(search.toLowerCase()))
+  );
+  const sorted = s.apply(filtered);
+  const totalCost = rows.reduce((a, x) => a + x.cost, 0);
+  const top = rows.length ? [...rows].sort((a, b) => b.cost - a.cost)[0] : null;
+  if (!rows.length) return (<><PageHead title="Sessions" sub="No session data yet" /><EmptyHint title="No sessions tracked" desc="Pass __sessionId in your provider wrapper calls to see session breakdowns here." /></>);
+  return (
+    <>
+      <PageHead title="Sessions" sub={rows.length + ' sessions'} search={search} setSearch={setSearch} />
+      <StatStrip items={[
+        { label: 'Sessions', value: fmtInt(rows.length) },
+        { label: 'Total cost', value: fmtUSD(totalCost, 4) },
+        { label: 'Avg cost / session', value: fmtUSD(totalCost / Math.max(rows.length, 1), 4) },
+        top ? { label: 'Most expensive', value: fmtUSD(top.cost, 4), sub: top.id, color: '#e3b341' } : { label: 'Most expensive', value: '—' },
+      ]} />
+      <section className="tw-section">
+        <div className="tw-table-wrap">
+          <table className="tw-table compact">
+            <thead><tr>
+              <SortTh k="id" label="Session" s={s} />
+              <th>User</th>
+              <th>Feature</th>
+              <th>Model</th>
+              <SortTh k="calls" label="Calls" align="right" s={s} />
+              <SortTh k="cost" label="Cost" align="right" s={s} />
+              <SortTh k="avg" label="Avg / call" align="right" s={s} />
+            </tr></thead>
+            <tbody>
+              {sorted.map((x) => (
+                <tr key={x.id} className="tw-row" onClick={() => onInspect && onInspect(x)}>
+                  <td><span className="tw-model-name">{x.id}</span></td>
+                  <td><span className="tw-cell-sub">{x.userId || '—'}</span></td>
+                  <td>{x.feature ? <span className="tw-feat sm" style={{ color: x.featureColor, borderColor: x.featureColor + '55' }}>{x.feature}</span> : <span className="tw-cell-sub">—</span>}</td>
+                  <td>{x.model ? <div className="tw-model-cell"><span className="tw-model-dot" style={{ background: x.modelColor }} /><span className="tw-model-name" style={{ fontSize: 11.5 }}>{x.model}</span></div> : <span className="tw-cell-sub">—</span>}</td>
+                  <td className="tw-num-cell">{fmtInt(x.calls)}</td>
+                  <td className="tw-num-cell tw-cost">{fmtUSD(x.cost, 4)}</td>
+                  <td className="tw-num-cell">{fmtUSD(x.avg, 4)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
+
+// ── Users ────────────────────────────────────────────────────────────────────
+function UsersPage({ _sseV, onInspect }) {
+  const { fmtUSD, fmtInt } = window.TW;
+  const [search, setSearch] = useStateP('');
+  const s = useSort('cost');
+  const rows = useMemoP(() => {
+    const data = window.TW.byUser || {};
+    const feed = window.TW.recentFeed || [];
+    const meta = {};
+    feed.forEach((c) => {
+      if (c.userId && !meta[c.userId]) meta[c.userId] = { model: c.model, modelColor: c.modelColor };
+    });
+    return Object.entries(data).map(([id, st]) => {
+      const m = meta[id] || {};
+      return { id, cost: st.costUSD, calls: st.calls, avg: st.costUSD / Math.max(st.calls, 1),
+        topModel: m.model || null, topModelColor: m.modelColor || '#484f58' };
+    });
+  }, [_sseV]);
+  const filtered = rows.filter((x) => x.id.toLowerCase().includes(search.toLowerCase()));
+  const sorted = s.apply(filtered);
+  const totalCost = rows.reduce((a, x) => a + x.cost, 0);
+  const maxCost = Math.max(...rows.map((x) => x.cost), 0.0001);
+  const top = rows.length ? [...rows].sort((a, b) => b.cost - a.cost)[0] : null;
+  if (!rows.length) return (<><PageHead title="Users" sub="No user data yet" /><EmptyHint title="No users tracked" desc="Pass __userId in your provider wrapper calls to see user breakdowns here." /></>);
+  return (
+    <>
+      <PageHead title="Users" sub={rows.length + ' users'} search={search} setSearch={setSearch} />
+      <StatStrip items={[
+        { label: 'Users', value: fmtInt(rows.length) },
+        { label: 'Total cost', value: fmtUSD(totalCost, 4) },
+        { label: 'Avg cost / user', value: fmtUSD(totalCost / Math.max(rows.length, 1), 4) },
+        top ? { label: 'Top spender', value: fmtUSD(top.cost, 4), sub: top.id, color: '#bc8cff' } : { label: 'Top spender', value: '—' },
+      ]} />
+      <section className="tw-section">
+        <div className="tw-table-wrap">
+          <table className="tw-table compact">
+            <thead><tr>
+              <SortTh k="id" label="User" s={s} />
+              <SortTh k="cost" label="Cost" align="right" s={s} />
+              <th style={{ width: 150 }}>Share</th>
+              <SortTh k="calls" label="Calls" align="right" s={s} />
+              <th>Top model</th>
+              <SortTh k="avg" label="Avg / call" align="right" s={s} />
+            </tr></thead>
+            <tbody>
+              {sorted.map((u) => (
+                <tr key={u.id} className="tw-row" onClick={() => onInspect && onInspect(u)}>
+                  <td><span className="tw-cell-user">{u.id}</span></td>
+                  <td className="tw-num-cell tw-cost">{fmtUSD(u.cost, 4)}</td>
+                  <td><ShareBar frac={u.cost / maxCost} color={u.topModelColor} /></td>
+                  <td className="tw-num-cell">{fmtInt(u.calls)}</td>
+                  <td>{u.topModel ? <div className="tw-model-cell"><span className="tw-model-dot" style={{ background: u.topModelColor }} /><span className="tw-model-name" style={{ fontSize: 11.5 }}>{u.topModel}</span></div> : <span className="tw-cell-sub">—</span>}</td>
+                  <td className="tw-num-cell">{fmtUSD(u.avg, 4)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
+
+// ── Features ─────────────────────────────────────────────────────────────────
+function FeaturesPage({ _sseV }) {
+  const { fmtUSD, fmtInt, FEATURE_COLOR } = window.TW;
+  const [search, setSearch] = useStateP('');
+  const rows = useMemoP(() => {
+    const data = window.TW.byFeature || {};
+    const feed = window.TW.recentFeed || [];
+    const meta = {};
+    feed.forEach((c) => {
+      if (c.feature && c.feature !== '—' && !meta[c.feature]) meta[c.feature] = { model: c.model, modelColor: c.modelColor };
+    });
+    return Object.entries(data).map(([id, st]) => {
+      const m = meta[id] || {};
+      return { id, cost: st.costUSD, calls: st.calls, avg: st.costUSD / Math.max(st.calls, 1),
+        color: (FEATURE_COLOR || {})[id] || bdColor(id),
+        topModel: m.model || null, topModelColor: m.modelColor || '#58a6ff' };
+    }).sort((a, b) => b.cost - a.cost);
+  }, [_sseV]);
+  const totalCost = rows.reduce((a, f) => a + f.cost, 0);
+  const maxCost = Math.max(...rows.map((f) => f.cost), 0.0001);
+  const filtered = rows.filter((f) => f.id.toLowerCase().includes(search.toLowerCase()));
+  const byMeta = window.TW.byMetadata || {};
+  if (!rows.length) return (<><PageHead title="Features" sub="No feature data yet" /><EmptyHint title="No features tracked" desc="Pass __feature in your provider wrapper calls to see feature breakdowns here." /></>);
+  return (
+    <>
+      <PageHead title="Features" sub={rows.length + ' features'} search={search} setSearch={setSearch} />
+      <StatStrip items={[
+        { label: 'Features', value: rows.length },
+        { label: 'Total cost', value: fmtUSD(totalCost, 4) },
+        { label: 'Avg / call', value: fmtUSD(totalCost / Math.max(rows.reduce((a, f) => a + f.calls, 0), 1), 4) },
+        { label: 'Top feature', value: rows[0] ? rows[0].id : '—', sub: rows[0] ? fmtUSD(rows[0].cost, 4) : '', color: rows[0] ? rows[0].color : undefined },
+      ]} />
+      <div className="tw-feat-grid">
+        {filtered.map((f) => (
+          <div key={f.id} className="tw-feat-card">
+            <div className="tw-feat-card-top">
+              <span className="tw-feat" style={{ color: f.color, borderColor: f.color + '55' }}>{f.id}</span>
+              <span className="tw-feat-cost">{fmtUSD(f.cost, 4)}</span>
+            </div>
+            <div className="tw-feat-meta">
+              <span>{fmtInt(f.calls)} calls</span>
+              <span>{((f.cost / Math.max(totalCost, 0.0001)) * 100).toFixed(0)}% of spend</span>
+            </div>
+            <div className="tw-feat-bar"><div style={{ width: ((f.cost / maxCost) * 100).toFixed(1) + '%', background: f.color }} /></div>
+            {f.topModel && <div className="tw-feat-foot"><span className="tw-model-cell"><span className="tw-model-dot" style={{ background: f.topModelColor }} />{f.topModel}</span><span>{fmtUSD(f.avg, 4)} / call</span></div>}
+          </div>
+        ))}
+      </div>
+      {Object.keys(byMeta).length > 0 && <MetadataSection byMetadata={byMeta} t={{ animLevel: 'lively' }} />}
+    </>
+  );
+}
+
+// ── Breakdown page ────────────────────────────────────────────────────────────
+function BreakdownPage({ _sseV }) {
+  const { fmtUSD, fmtInt, FEATURE_COLOR } = window.TW;
+  const dims = useMemoP(() => {
+    const r = window.TW;
+    const toRows = (obj, colorFn) => Object.entries(obj || {}).map(([k, v], i) => ({ value: k, cost: v.costUSD, calls: v.calls, color: colorFn(k, i) }));
+    const result = [];
+    if (Object.keys(r.byModel || {}).length) result.push({ id: 'model', label: 'Model', code: 'byModel', kind: 'builtin', rows: toRows(r.byModel, bdColor) });
+    if (Object.keys(r.byFeature || {}).length) result.push({ id: 'feature', label: 'Feature', code: 'byFeature', kind: 'builtin', rows: toRows(r.byFeature, (k) => (FEATURE_COLOR || {})[k] || bdColor(k)) });
+    if (Object.keys(r.byUser || {}).length) result.push({ id: 'user', label: 'User', code: 'byUser', kind: 'builtin', rows: toRows(r.byUser, bdColor) });
+    if (Object.keys(r.bySession || {}).length) result.push({ id: 'session', label: 'Session', code: 'bySession', kind: 'builtin', rows: toRows(r.bySession, bdColor).slice(0, 30) });
+    if (Object.keys(r.byApp || {}).length) result.push({ id: 'app', label: 'App', code: 'byApp', kind: 'builtin', rows: toRows(r.byApp, bdColor) });
+    Object.entries(r.byMetadata || {}).forEach(([key, vals]) => {
+      result.push({ id: 'meta_' + key, label: key, code: "byMetadata['" + key + "']", kind: 'metadata',
+        rows: Object.entries(vals).map(([v, st], i) => ({ value: v, cost: st.costUSD, calls: st.calls, color: BDMC[i % BDMC.length] })) });
+    });
+    return result;
+  }, [_sseV]);
+  const [sel, setSel] = useStateP(null);
+  const dim = dims.find((d) => d.id === sel) || dims[0];
+  if (!dims.length) return (<><PageHead title="Breakdown" sub="No data yet" /><EmptyHint title="No data to break down" desc="Start tracking LLM calls to see breakdowns by model, feature, user, session, and custom metadata." /></>);
+  const maxCost = dim ? Math.max(...dim.rows.map((r) => r.cost), 0.0001) : 0.0001;
+  return (
+    <>
+      <PageHead title="Breakdown" sub="group spend by any dimension" />
+      <div className="tw-dim-toolbar">
+        <div className="tw-dim-chips">
+          {dims.map((d) => (
+            <button key={d.id} className={'tw-dim-chip' + (d.id === (dim ? dim.id : '') ? ' on' : '')} onClick={() => setSel(d.id)}>
+              {d.label}<span className="cnt">{d.rows.length}</span>
+              {d.kind === 'metadata' && <span className="mtag">meta</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+      {dim && (
+        <section className="tw-section">
+          <div className="tw-dim-head">
+            <div className="tw-dim-head-l">
+              <span className="tw-dim-name">{dim.label}</span>
+              <code className="tw-code">{dim.code}</code>
+              <span className="tw-dim-meta">{dim.rows.length} values \xb7 {fmtUSD(dim.rows.reduce((a, r) => a + r.cost, 0), 4)} \xb7 {fmtInt(dim.rows.reduce((a, r) => a + r.calls, 0))} calls</span>
+            </div>
+          </div>
+          <div className="tw-table-wrap">
+            <table className="tw-table compact">
+              <thead><tr>
+                <th>{dim.label}</th>
+                <th style={{ textAlign: 'right', width: 120 }}>Cost</th>
+                <th style={{ width: 180 }}>Share</th>
+                <th style={{ textAlign: 'right', width: 100 }}>Calls</th>
+                <th style={{ textAlign: 'right', width: 110 }}>Avg / call</th>
+              </tr></thead>
+              <tbody>
+                {[...dim.rows].sort((a, b) => b.cost - a.cost).map((r) => (
+                  <tr key={r.value} className="tw-row" style={{ cursor: 'default' }}>
+                    <td><div className="tw-meta-cell"><span className="tw-model-dot" style={{ background: r.color }} /><span className="tw-meta-val">{r.value}</span></div></td>
+                    <td className="tw-num-cell tw-cost">{fmtUSD(r.cost, 4)}</td>
+                    <td><ShareBar frac={r.cost / maxCost} color={r.color} /></td>
+                    <td className="tw-num-cell">{fmtInt(r.calls)}</td>
+                    <td className="tw-num-cell">{fmtUSD(r.cost / Math.max(r.calls, 1), 4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
+// ── Entity drawer ─────────────────────────────────────────────────────────────
+function EntityDrawer({ entity, kind, onClose }) {
+  const { fmtUSD, fmtInt, fmtAgo } = window.TW;
+  useEffectP2(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const open = !!entity;
+  const e = entity;
+  const recentCalls = useMemoP(() => {
+    if (!e) return [];
+    const feed = window.TW.recentFeed || [];
+    if (kind === 'session') return feed.filter((c) => c.session === e.id).slice(0, 5);
+    if (kind === 'user') return feed.filter((c) => c.userId === e.id).slice(0, 5);
+    return [];
+  }, [e, kind]);
+  return (
+    <>
+      <div className={'tw-scrim' + (open ? ' open' : '')} onClick={onClose} />
+      <aside className={'tw-slideover' + (open ? ' open' : '')}>
+        {e && (
+          <div className="tw-so-inner">
+            <div className="tw-so-head">
+              <div className="tw-so-title">
+                <div>
+                  <div className="tw-so-name">{e.id}</div>
+                  <div className="tw-so-prov">{kind}{e.userId && kind === 'session' ? ' \xb7 ' + e.userId : ''}{e.feature && e.feature !== '—' ? ' \xb7 ' + e.feature : ''}</div>
+                </div>
+              </div>
+              <button className="tw-so-close" onClick={onClose}>✕</button>
+            </div>
+            <div className="tw-so-stats">
+              <div className="tw-so-stat"><div className="tw-so-stat-l">Cost</div><div className="tw-so-stat-v">{fmtUSD(e.cost, 4)}</div></div>
+              <div className="tw-so-stat"><div className="tw-so-stat-l">Calls</div><div className="tw-so-stat-v">{fmtInt(e.calls)}</div></div>
+              <div className="tw-so-stat"><div className="tw-so-stat-l">Avg / call</div><div className="tw-so-stat-v">{fmtUSD(e.avg, 4)}</div></div>
+            </div>
+            {recentCalls.length > 0 && (
+              <>
+                <div className="tw-so-section-label">Recent calls (last 40 entries)</div>
+                <div className="tw-so-calls">
+                  {recentCalls.map((c, i) => (
+                    <div key={i} className="tw-so-call">
+                      <div className="tw-so-call-top">
+                        <span className="tw-so-call-time">{fmtAgo(Math.round((Date.now() - c.ts) / 1000))}</span>
+                        {c.feature && c.feature !== '—' && <span className="tw-feat" style={{ color: c.featureColor, borderColor: c.featureColor + '55' }}>{c.feature}</span>}
+                        <span className="tw-so-call-cost">{fmtUSD(c.cost, 4)}</span>
+                      </div>
+                      <div className="tw-so-call-bot">
+                        <span className="tw-model-name" style={{ fontSize: 11 }}>{c.model}</span>
+                        <span>{fmtInt(c.inTok)} in \xb7 {fmtInt(c.outTok)} out</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {recentCalls.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12, padding: '12px 0' }}>No recent entries for this {kind} in the last 40 tracked calls.</div>}
+          </div>
+        )}
+      </aside>
+    </>
+  );
+}
+
+Object.assign(window, { SessionsPage, UsersPage, FeaturesPage, BreakdownPage, EntityDrawer, PageHead, StatStrip });
 </script>
 
 <script type="text/babel">
@@ -1511,6 +1961,8 @@ function App() {
   const [selModel, setSelModel] = useStateApp(null);
   const [paletteOpen, setPaletteOpen] = useStateApp(false);
   const [_sseV, setSseV] = useStateApp(0);
+  const [view, setView] = useStateApp('overview');
+  const [entity, setEntity] = useStateApp(null);
 
   useEffectApp(() => {
     const h = function() { setSseV(function(v) { return v + 1; }); };
@@ -1555,8 +2007,10 @@ function App() {
 
   const handleAction = (act) => {
     if (!act) return;
-    if (act.range) setRange(act.range);
+    if (act.range) { setView('overview'); setRange(act.range); }
+    if (act.view) setView(act.view);
     if (act.model) {
+      setView('overview');
       const m = models.find((x) => x.id === act.model);
       if (m) setSelModel({ ...m, share: m.cost / Math.max(kpis.cost, 0.0001) });
     }
@@ -1564,25 +2018,34 @@ function App() {
 
   return (
     <div className="tw-root" style={{ '--accent': t.accent }}>
-      <Header t={t} onOpenPalette={() => setPaletteOpen(true)} />
+      <Header t={t} onOpenPalette={() => setPaletteOpen(true)} view={view} setView={setView} />
       {t.appState === 'loading' || sseStatus === 'pending' ? (
         <main className="tw-main"><LoadingSkeleton /></main>
       ) : t.appState === 'empty' || sseStatus === 'empty' ? (
         <main className="tw-main"><EmptyState /></main>
       ) : (
         <main className="tw-main">
-          <BudgetBar t={t} />
-          <KpiRow kpis={kpis} range={range} t={t} />
-          <TimeFilter range={range} setRange={setRange} t={t} setTweak={setTweak} />
-          <ChartsRow range={range} models={models} kpis={kpis} series={series} t={t} />
-          <ModelTable models={models} total={kpis.cost} t={t} exampleHover={t.smartHighlight}
-                      onRowClick={(m) => setSelModel({ ...m, share: m.cost / Math.max(kpis.cost, 0.0001) })} />
-          <MetadataSection byMetadata={byMetadata} t={t} />
-          <ForecastSection t={t} />
-          <LiveActivity t={t} />
+          {view === 'overview' && (
+            <>
+              <BudgetBar t={t} />
+              <KpiRow kpis={kpis} range={range} t={t} />
+              <TimeFilter range={range} setRange={setRange} t={t} setTweak={setTweak} />
+              <ChartsRow range={range} models={models} kpis={kpis} series={series} t={t} />
+              <ModelTable models={models} total={kpis.cost} t={t} exampleHover={t.smartHighlight}
+                          onRowClick={(m) => setSelModel({ ...m, share: m.cost / Math.max(kpis.cost, 0.0001) })} />
+              <MetadataSection byMetadata={byMetadata} t={t} />
+              <ForecastSection t={t} />
+              <LiveActivity t={t} />
+            </>
+          )}
+          {view === 'sessions' && <SessionsPage _sseV={_sseV} onInspect={(x) => setEntity({ data: x, kind: 'session' })} />}
+          {view === 'users' && <UsersPage _sseV={_sseV} onInspect={(x) => setEntity({ data: x, kind: 'user' })} />}
+          {view === 'features' && <FeaturesPage _sseV={_sseV} />}
+          {view === 'breakdown' && <BreakdownPage _sseV={_sseV} />}
         </main>
       )}
       <SlideOver model={selModel} onClose={() => setSelModel(null)} t={t} />
+      <EntityDrawer entity={entity && entity.data} kind={entity && entity.kind} onClose={() => setEntity(null)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onAction={handleAction} />
       <TweaksPanel title="Tweaks \xb7 UX">
         <TweakSection label="Hierarquia &amp; densidade" />
