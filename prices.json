@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-23",
+  "updated_at": "2026-06-24",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1090,8 +1090,9 @@
       "maxInputTokens": 200000
     },
     "gpt-oss-20b": {
-      "input": 0.09,
-      "output": 0.36
+      "input": 0.0145,
+      "output": 0.07,
+      "maxInputTokens": 131072
     },
     "deepseek-ai/deepseek-r1-0528-tput": {
       "input": 0.55,
