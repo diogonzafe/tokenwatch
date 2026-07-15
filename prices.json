@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-14",
+  "updated_at": "2026-07-15",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1530,6 +1530,11 @@
       "output": 2.4,
       "cachedInput": 0.06,
       "maxInputTokens": 128000
+    },
+    "gemini-omni-flash-preview": {
+      "input": 1.5,
+      "output": 9,
+      "maxInputTokens": 1048576
     }
   }
 }
