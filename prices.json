@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-30",
+  "updated_at": "2026-07-31",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -503,13 +503,13 @@
       "input": 0.75,
       "output": 4.5,
       "cachedInput": 0.075,
-      "maxInputTokens": 1050000
+      "maxInputTokens": 272000
     },
     "gpt-5.4-nano": {
       "input": 0.2,
       "output": 1.25,
       "cachedInput": 0.02,
-      "maxInputTokens": 1050000
+      "maxInputTokens": 272000
     },
     "o1-2024-12-17": {
       "input": 15,
@@ -1343,13 +1343,13 @@
       "input": 0.75,
       "output": 4.5,
       "cachedInput": 0.075,
-      "maxInputTokens": 1050000
+      "maxInputTokens": 272000
     },
     "gpt-5.4-nano-2026-03-17": {
       "input": 0.2,
       "output": 1.25,
       "cachedInput": 0.02,
-      "maxInputTokens": 1050000
+      "maxInputTokens": 272000
     },
     "gpt-image-2": {
       "input": 5,
@@ -1506,17 +1506,17 @@
       "maxInputTokens": 1050000
     },
     "gpt-5.6-terra": {
-      "input": 2.5,
-      "output": 15,
-      "cachedInput": 0.25,
-      "cacheCreationInput": 3.125,
+      "input": 2,
+      "output": 12,
+      "cachedInput": 0.2,
+      "cacheCreationInput": 2.5,
       "maxInputTokens": 1050000
     },
     "gpt-5.6-luna": {
-      "input": 1,
-      "output": 6,
-      "cachedInput": 0.1,
-      "cacheCreationInput": 1.25,
+      "input": 0.2,
+      "output": 1.2,
+      "cachedInput": 0.02,
+      "cacheCreationInput": 0.25,
       "maxInputTokens": 1050000
     },
     "gpt-realtime-2.1": {
