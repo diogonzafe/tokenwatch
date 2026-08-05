@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-04",
+  "updated_at": "2026-08-05",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1561,6 +1561,17 @@
       "cachedInput": 0.5,
       "cacheCreationInput": 6.25,
       "maxInputTokens": 1000000
+    },
+    "gemini-robotics-er-2-preview": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "maxInputTokens": 131072
+    },
+    "gemini-robotics-er-1.6-preview": {
+      "input": 1,
+      "output": 5,
+      "maxInputTokens": 131072
     }
   }
 }
