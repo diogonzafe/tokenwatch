@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-11",
+  "updated_at": "2026-08-12",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1572,6 +1572,24 @@
       "input": 1,
       "output": 5,
       "maxInputTokens": 131072
+    },
+    "claude-mythos-5": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 1000000
+    },
+    "claude-mythos-preview": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 1000000
+    },
+    "gemini-robotics-er-2-streaming-preview": {
+      "input": 2,
+      "output": 10
     }
   }
 }
