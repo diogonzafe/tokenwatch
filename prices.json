@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-22",
+  "updated_at": "2026-08-23",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1492,17 +1492,17 @@
       "maxInputTokens": 1000000
     },
     "gpt-5.6": {
-      "input": 5,
-      "output": 30,
-      "cachedInput": 0.5,
-      "cacheCreationInput": 6.25,
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 5,
       "maxInputTokens": 922000
     },
     "gpt-5.6-sol": {
-      "input": 5,
-      "output": 30,
-      "cachedInput": 0.5,
-      "cacheCreationInput": 6.25,
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 5,
       "maxInputTokens": 922000
     },
     "gpt-5.6-terra": {
@@ -1606,6 +1606,7 @@
     "gemini-3.1-flash-lite-image": {
       "input": 0.25,
       "output": 1.5,
+      "cachedInput": 0.025,
       "maxInputTokens": 65536
     },
     "gpt-5.6-cyber": {
@@ -1623,10 +1624,10 @@
       "maxInputTokens": 400000
     },
     "daybreak-blue-latest": {
-      "input": 5,
-      "output": 30,
-      "cachedInput": 0.5,
-      "cacheCreationInput": 6.25,
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 5,
       "maxInputTokens": 1050000
     },
     "chat-latest": {
