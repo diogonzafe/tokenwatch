@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-27",
+  "updated_at": "2026-08-28",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -756,9 +756,9 @@
       "maxInputTokens": 161000
     },
     "deepseek-ai/deepseek-v3.1": {
-      "input": 55000,
-      "output": 165000,
-      "maxInputTokens": 128000
+      "input": 0.55,
+      "output": 1.65,
+      "maxInputTokens": 161000
     },
     "deepseek-ai/deepseek-v3.1-terminus": {
       "input": 0.27,
@@ -832,11 +832,11 @@
     "gemini-2.5-flash-preview-09-2025": {
       "input": 0.3,
       "output": 2.5,
-      "cachedInput": 0.075,
+      "cachedInput": 0.03,
       "maxInputTokens": 1048576
     },
     "gemini-live-2.5-flash-preview-native-audio-09-2025": {
-      "input": 0.3,
+      "input": 0.5,
       "output": 2,
       "cachedInput": 0.075,
       "maxInputTokens": 1048576
@@ -844,7 +844,7 @@
     "gemini-2.5-flash-lite-preview-06-17": {
       "input": 0.1,
       "output": 0.4,
-      "cachedInput": 0.025,
+      "cachedInput": 0.01,
       "maxInputTokens": 1048576
     },
     "gemini-3-pro-preview": {
@@ -904,8 +904,9 @@
       "maxInputTokens": 8192
     },
     "deepseek-ai/deepseek-v3.2": {
-      "input": 0.28,
-      "output": 0.4,
+      "input": 0.26,
+      "output": 0.38,
+      "cachedInput": 0.13,
       "maxInputTokens": 163840
     },
     "gpt-3.5-turbo-1106": {
@@ -1277,18 +1278,18 @@
       "maxInputTokens": 128000
     },
     "gemini-2.5-flash-native-audio-latest": {
-      "input": 0.3,
-      "output": 2.5,
+      "input": 0.5,
+      "output": 2,
       "maxInputTokens": 1048576
     },
     "gemini-2.5-flash-native-audio-preview-09-2025": {
-      "input": 0.3,
-      "output": 2.5,
+      "input": 0.5,
+      "output": 2,
       "maxInputTokens": 1048576
     },
     "gemini-2.5-flash-native-audio-preview-12-2025": {
-      "input": 0.3,
-      "output": 2.5,
+      "input": 0.5,
+      "output": 2,
       "maxInputTokens": 1048576
     },
     "gemini-3.1-flash-live-preview": {
@@ -1463,9 +1464,10 @@
       "maxInputTokens": 200000
     },
     "deepseek-ai/deepseek-v4-flash": {
-      "input": 0.14,
-      "output": 0.28,
-      "maxInputTokens": 32768
+      "input": 0.09,
+      "output": 0.18,
+      "cachedInput": 0.018,
+      "maxInputTokens": 1048576
     },
     "gemini-3-pro-image": {
       "input": 2,
@@ -1641,19 +1643,41 @@
       "output": 21
     },
     "deepseek-ai/deepseek-v4-flash-0731": {
-      "input": 0.14,
-      "output": 0.28,
+      "input": 0.08,
+      "output": 0.18,
+      "cachedInput": 0.016,
       "maxInputTokens": 1048576
     },
     "deepseek-ai/deepseek-v4-pro": {
-      "input": 1.74,
-      "output": 3.48,
-      "maxInputTokens": 512000
+      "input": 1.3,
+      "output": 2.6,
+      "cachedInput": 0.1,
+      "maxInputTokens": 1048576
     },
     "deepseek-ai/deepseek-v4-pro-0813": {
-      "input": 1.32,
-      "output": 3.96,
+      "input": 1.3,
+      "output": 2.6,
+      "cachedInput": 0.1,
       "maxInputTokens": 1048576
+    },
+    "gemini-live-2.5-flash-native-audio": {
+      "input": 0.5,
+      "output": 2,
+      "maxInputTokens": 1048576
+    },
+    "deepseek-v4-flash-vision-exp": {
+      "input": 0.44,
+      "output": 1.32,
+      "cachedInput": 0.014,
+      "maxInputTokens": 1000000
+    },
+    "gemini-3.5-transcribe": {
+      "input": 2,
+      "output": 12
+    },
+    "gemini-3.5-transcribe-live": {
+      "input": 3.5,
+      "output": 21
     }
   }
 }
