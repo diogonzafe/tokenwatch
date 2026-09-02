@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-01",
+  "updated_at": "2026-09-02",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1594,9 +1594,9 @@
       "output": 10
     },
     "deepseek-v4-flash-0731": {
-      "input": 0.14,
-      "output": 0.28,
-      "cachedInput": 0.028,
+      "input": 0.22,
+      "output": 0.66,
+      "cachedInput": 0.007,
       "maxInputTokens": 1048576
     },
     "gemini-3.7-flash": {
@@ -1691,6 +1691,20 @@
       "input": 1.5,
       "output": 9,
       "maxInputTokens": 131072
+    },
+    "claude-fable-5-1": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 0.25,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 1000000
+    },
+    "claude-fable-5-1@default": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 0.25,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 1000000
     }
   }
 }
