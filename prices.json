@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-03",
+  "updated_at": "2026-09-04",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1030,7 +1030,7 @@
     "gpt-realtime-mini": {
       "input": 0.6,
       "output": 2.4,
-      "maxInputTokens": 128000
+      "maxInputTokens": 32000
     },
     "deepseek-r1-distill-llama-70b": {
       "input": 0.99,
@@ -1364,9 +1364,9 @@
     },
     "gpt-realtime-2": {
       "input": 4,
-      "output": 16,
+      "output": 24,
       "cachedInput": 0.4,
-      "maxInputTokens": 32000
+      "maxInputTokens": 128000
     },
     "gemini-3.5-flash": {
       "input": 1.5,
@@ -1594,10 +1594,10 @@
       "output": 10
     },
     "deepseek-v4-flash-0731": {
-      "input": 0.22,
-      "output": 0.66,
-      "cachedInput": 0.007,
-      "maxInputTokens": 1048576
+      "input": 0.4,
+      "output": 0.8,
+      "cachedInput": 0.08,
+      "maxInputTokens": 256000
     },
     "gemini-3.7-flash": {
       "input": 0.75,
@@ -1705,6 +1705,19 @@
       "cachedInput": 0.25,
       "cacheCreationInput": 12.5,
       "maxInputTokens": 1000000
+    },
+    "gemini-3.8-flash": {
+      "input": 0.75,
+      "output": 3.75,
+      "cachedInput": 0.075,
+      "maxInputTokens": 1048576
+    },
+    "gpt-6-astra": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 922000
     }
   }
 }
