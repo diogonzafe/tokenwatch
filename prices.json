@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-05",
+  "updated_at": "2026-09-06",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -722,8 +722,8 @@
       "maxInputTokens": 128000
     },
     "deepseek-ai/deepseek-r1-0528": {
-      "input": 135000,
-      "output": 540000,
+      "input": 1.35,
+      "output": 5.4,
       "maxInputTokens": 161000
     },
     "deepseek-ai/deepseek-r1-0528-turbo": {
@@ -751,8 +751,8 @@
       "maxInputTokens": 65536
     },
     "deepseek-ai/deepseek-v3-0324": {
-      "input": 114000,
-      "output": 275000,
+      "input": 1.14,
+      "output": 2.75,
       "maxInputTokens": 161000
     },
     "deepseek-ai/deepseek-v3.1": {
@@ -1640,7 +1640,8 @@
     },
     "gemini-3.5-live-translate-preview": {
       "input": 3.5,
-      "output": 21
+      "output": 21,
+      "maxInputTokens": 131072
     },
     "deepseek-ai/deepseek-v4-flash-0731": {
       "input": 0.08,
@@ -1666,10 +1667,10 @@
       "maxInputTokens": 1048576
     },
     "deepseek-v4-flash-vision-exp": {
-      "input": 0.44,
-      "output": 1.32,
-      "cachedInput": 0.014,
-      "maxInputTokens": 1000000
+      "input": 0.22,
+      "output": 0.66,
+      "cachedInput": 0.007,
+      "maxInputTokens": 1048576
     },
     "gemini-3.5-transcribe": {
       "input": 2,
@@ -1718,6 +1719,27 @@
       "cachedInput": 1,
       "cacheCreationInput": 12.5,
       "maxInputTokens": 922000
+    },
+    "gpt-daybreak-red-latest": {
+      "input": 12.5,
+      "output": 75,
+      "cachedInput": 1.25,
+      "cacheCreationInput": 15.625,
+      "maxInputTokens": 400000
+    },
+    "gpt-daybreak-blue-latest": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 5,
+      "maxInputTokens": 1050000
+    },
+    "claude-mythos-5-1": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 0.25,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 1000000
     }
   }
 }
