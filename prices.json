@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-12",
+  "updated_at": "2026-09-13",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -490,13 +490,11 @@
     "gpt-5.4-pro": {
       "input": 30,
       "output": 180,
-      "cachedInput": 3,
       "maxInputTokens": 1050000
     },
     "gpt-5.4-pro-2026-03-05": {
       "input": 30,
       "output": 180,
-      "cachedInput": 3,
       "maxInputTokens": 1050000
     },
     "gpt-5.4-mini": {
@@ -722,9 +720,9 @@
       "maxInputTokens": 128000
     },
     "deepseek-ai/deepseek-r1-0528": {
-      "input": 1.35,
-      "output": 5.4,
-      "maxInputTokens": 161000
+      "input": 3,
+      "output": 7,
+      "maxInputTokens": 163840
     },
     "deepseek-ai/deepseek-r1-0528-turbo": {
       "input": 1,
@@ -1331,13 +1329,11 @@
     "gpt-5.5-pro": {
       "input": 30,
       "output": 180,
-      "cachedInput": 3,
       "maxInputTokens": 1050000
     },
     "gpt-5.5-pro-2026-04-23": {
       "input": 30,
       "output": 180,
-      "cachedInput": 3,
       "maxInputTokens": 1050000
     },
     "gpt-5.4-mini-2026-03-17": {
@@ -1745,6 +1741,23 @@
       "output": 30,
       "cachedInput": 0.5,
       "maxInputTokens": 272000
+    },
+    "computer-use-preview": {
+      "input": 3,
+      "output": 12,
+      "maxInputTokens": 8192
+    },
+    "deepseek-flash": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.006,
+      "maxInputTokens": 1000000
+    },
+    "deepseek-v4p1-flash": {
+      "input": 0.22,
+      "output": 0.66,
+      "cachedInput": 0.007,
+      "maxInputTokens": 1048576
     }
   }
 }
