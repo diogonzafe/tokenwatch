@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-15",
+  "updated_at": "2026-09-16",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -46,9 +46,10 @@
       "maxInputTokens": 200000
     },
     "claude-haiku-4-5": {
-      "input": 1,
-      "output": 5,
-      "cachedInput": 0.1,
+      "input": 1.1,
+      "output": 5.5,
+      "cachedInput": 0.11,
+      "cacheCreationInput": 1.375,
       "maxInputTokens": 200000
     },
     "gemini-2.5-pro": {
@@ -463,7 +464,7 @@
       "input": 1.75,
       "output": 14,
       "cachedInput": 0.175,
-      "maxInputTokens": 272000
+      "maxInputTokens": 400000
     },
     "gpt-5.2-pro": {
       "input": 21,
@@ -501,13 +502,13 @@
       "input": 0.75,
       "output": 4.5,
       "cachedInput": 0.075,
-      "maxInputTokens": 272000
+      "maxInputTokens": 400000
     },
     "gpt-5.4-nano": {
       "input": 0.2,
       "output": 1.25,
       "cachedInput": 0.02,
-      "maxInputTokens": 272000
+      "maxInputTokens": 400000
     },
     "o1-2024-12-17": {
       "input": 15,
@@ -1408,10 +1409,10 @@
       "maxInputTokens": 200000
     },
     "claude-fable-5": {
-      "input": 10,
-      "output": 50,
-      "cachedInput": 1,
-      "cacheCreationInput": 12.5,
+      "input": 11,
+      "output": 55,
+      "cachedInput": 1.1,
+      "cacheCreationInput": 13.75,
       "maxInputTokens": 1000000
     },
     "claude-fable-5@default": {
@@ -1442,15 +1443,15 @@
       "maxInputTokens": 131072
     },
     "deepseek-v4-pro": {
-      "input": 0.435,
-      "output": 0.87,
-      "cachedInput": 0.00363,
+      "input": 1.69,
+      "output": 3.38,
+      "cachedInput": 0.14027,
       "maxInputTokens": 1000000
     },
     "deepseek-v4-flash": {
-      "input": 0.14,
-      "output": 0.28,
-      "cachedInput": 0.0028,
+      "input": 0.142,
+      "output": 0.284,
+      "cachedInput": 0.0284,
       "maxInputTokens": 1000000
     },
     "deepseek-v4-flash-thinking": {
@@ -1509,14 +1510,14 @@
       "output": 12,
       "cachedInput": 0.2,
       "cacheCreationInput": 2.5,
-      "maxInputTokens": 922000
+      "maxInputTokens": 1050000
     },
     "gpt-5.6-luna": {
       "input": 0.2,
       "output": 1.2,
       "cachedInput": 0.02,
       "cacheCreationInput": 0.25,
-      "maxInputTokens": 922000
+      "maxInputTokens": 1050000
     },
     "gpt-realtime-2.1": {
       "input": 4,
@@ -1740,7 +1741,7 @@
       "input": 5,
       "output": 30,
       "cachedInput": 0.5,
-      "maxInputTokens": 272000
+      "maxInputTokens": 400000
     },
     "computer-use-preview": {
       "input": 3,
@@ -1782,6 +1783,32 @@
       "input": 12.5,
       "output": 75,
       "cachedInput": 1.25
+    },
+    "claude-opus-4-8-think": {
+      "input": 5,
+      "output": 25,
+      "cachedInput": 0.5,
+      "cacheCreationInput": 6.25,
+      "maxInputTokens": 1000000
+    },
+    "gpt-5.4-high": {
+      "input": 2.5,
+      "output": 15,
+      "cachedInput": 0.25,
+      "maxInputTokens": 1050000
+    },
+    "gpt-5.4-low": {
+      "input": 2.5,
+      "output": 15,
+      "cachedInput": 0.25,
+      "maxInputTokens": 1050000
+    },
+    "gpt-5.6-sol-disc": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 5,
+      "maxInputTokens": 1050000
     }
   }
 }
