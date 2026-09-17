@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-16",
+  "updated_at": "2026-09-17",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -517,9 +517,9 @@
       "maxInputTokens": 200000
     },
     "o1-mini": {
-      "input": 1.21,
-      "output": 4.84,
-      "cachedInput": 0.605,
+      "input": 1.1,
+      "output": 4.4,
+      "cachedInput": 0.55,
       "maxInputTokens": 128000
     },
     "o1-mini-2024-09-12": {
@@ -658,7 +658,7 @@
       "output": 15,
       "cachedInput": 0.3,
       "cacheCreationInput": 3.75,
-      "maxInputTokens": 200000
+      "maxInputTokens": 1000000
     },
     "claude-sonnet-4-5-20250929-v1:0": {
       "input": 3,
@@ -880,15 +880,15 @@
       "maxInputTokens": 128000
     },
     "gemini-flash-latest": {
-      "input": 0.3,
-      "output": 2.5,
-      "cachedInput": 0.03,
+      "input": 0.75,
+      "output": 3.75,
+      "cachedInput": 0.075,
       "maxInputTokens": 1048576
     },
     "gemini-flash-lite-latest": {
-      "input": 0.1,
-      "output": 0.4,
-      "cachedInput": 0.01,
+      "input": 0.3,
+      "output": 2.5,
+      "cachedInput": 0.03,
       "maxInputTokens": 1048576
     },
     "gemini-gemma-2-27b-it": {
@@ -1289,16 +1289,16 @@
     "gemini-2.5-flash-native-audio-preview-12-2025": {
       "input": 0.5,
       "output": 2,
-      "maxInputTokens": 1048576
+      "maxInputTokens": 131072
     },
     "gemini-3.1-flash-live-preview": {
       "input": 0.75,
       "output": 4.5
     },
     "gemini-pro-latest": {
-      "input": 1.25,
-      "output": 10,
-      "cachedInput": 0.125,
+      "input": 2,
+      "output": 12,
+      "cachedInput": 0.2,
       "maxInputTokens": 1048576
     },
     "gemini-exp-1206": {
@@ -1563,9 +1563,9 @@
       "maxInputTokens": 1000000
     },
     "gemini-robotics-er-2-preview": {
-      "input": 2,
-      "output": 10,
-      "cachedInput": 0.2,
+      "input": 1,
+      "output": 5,
+      "cachedInput": 0.1,
       "maxInputTokens": 131072
     },
     "gemini-robotics-er-1.6-preview": {
@@ -1628,7 +1628,7 @@
       "output": 20,
       "cachedInput": 0.4,
       "cacheCreationInput": 5,
-      "maxInputTokens": 1050000
+      "maxInputTokens": 922000
     },
     "chat-latest": {
       "input": 5,
@@ -1728,7 +1728,7 @@
       "output": 20,
       "cachedInput": 0.4,
       "cacheCreationInput": 5,
-      "maxInputTokens": 1050000
+      "maxInputTokens": 922000
     },
     "claude-mythos-5-1": {
       "input": 10,
@@ -1768,7 +1768,8 @@
     "deepseek-ai/deepseek-v4.1-flash": {
       "input": 0.3,
       "output": 1.2,
-      "cachedInput": 0.006
+      "cachedInput": 0.006,
+      "maxInputTokens": 1048576
     },
     "gemini-2.5-flash-native-audio": {
       "input": 0.5,
@@ -1809,6 +1810,50 @@
       "cachedInput": 0.4,
       "cacheCreationInput": 5,
       "maxInputTokens": 1050000
+    },
+    "gpt-5.5-2026-04-24": {
+      "input": 5,
+      "output": 30,
+      "cachedInput": 0.5,
+      "maxInputTokens": 1050000
+    },
+    "gpt-5.6-sol-2026-07-09": {
+      "input": 4,
+      "output": 20,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 5,
+      "maxInputTokens": 922000
+    },
+    "gpt-5.6-terra-2026-07-09": {
+      "input": 2,
+      "output": 12,
+      "cachedInput": 0.2,
+      "cacheCreationInput": 2.5,
+      "maxInputTokens": 922000
+    },
+    "gpt-5.6-luna-2026-07-09": {
+      "input": 0.2,
+      "output": 1.2,
+      "cachedInput": 0.02,
+      "cacheCreationInput": 0.25,
+      "maxInputTokens": 922000
+    },
+    "gpt-6-astra-2026-09-03": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 922000
+    },
+    "gemini-3.8-live": {
+      "input": 0.75,
+      "output": 4.5,
+      "maxInputTokens": 131072
+    },
+    "gemini-3.8-live-extended-thinking": {
+      "input": 0.75,
+      "output": 4.5,
+      "maxInputTokens": 131072
     }
   }
 }
