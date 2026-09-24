@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-23",
+  "updated_at": "2026-09-24",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -404,25 +404,25 @@
       "input": 1.25,
       "output": 10,
       "cachedInput": 0.125,
-      "maxInputTokens": 128000
+      "maxInputTokens": 111616
     },
     "gpt-5.1-codex": {
       "input": 1.25,
       "output": 10,
       "cachedInput": 0.125,
-      "maxInputTokens": 272000
+      "maxInputTokens": 400000
     },
     "gpt-5.1-codex-max": {
       "input": 1.25,
       "output": 10,
       "cachedInput": 0.125,
-      "maxInputTokens": 272000
+      "maxInputTokens": 400000
     },
     "gpt-5.1-codex-mini": {
       "input": 0.25,
       "output": 2,
       "cachedInput": 0.025,
-      "maxInputTokens": 272000
+      "maxInputTokens": 400000
     },
     "gpt-5.2": {
       "input": 1.75,
@@ -440,7 +440,7 @@
       "input": 1.75,
       "output": 14,
       "cachedInput": 0.175,
-      "maxInputTokens": 128000
+      "maxInputTokens": 111616
     },
     "gpt-5.2-chat-2025-12-11": {
       "input": 1.75,
@@ -458,7 +458,7 @@
       "input": 1.75,
       "output": 14,
       "cachedInput": 0.175,
-      "maxInputTokens": 128000
+      "maxInputTokens": 111616
     },
     "gpt-5.3-codex": {
       "input": 1.75,
@@ -732,9 +732,9 @@
       "maxInputTokens": 32768
     },
     "deepseek-ai/deepseek-r1-distill-llama-70b": {
-      "input": 0.25,
-      "output": 0.75,
-      "maxInputTokens": 128000
+      "input": 2,
+      "output": 2,
+      "maxInputTokens": 131072
     },
     "deepseek-ai/deepseek-r1-distill-qwen-32b": {
       "input": 0.15,
@@ -756,9 +756,9 @@
       "maxInputTokens": 128000
     },
     "deepseek-ai/deepseek-v3.1": {
-      "input": 0.55,
-      "output": 1.65,
-      "maxInputTokens": 161000
+      "input": 0.6,
+      "output": 1.7,
+      "maxInputTokens": 131072
     },
     "deepseek-ai/deepseek-v3.1-terminus": {
       "input": 0.27,
@@ -1054,12 +1054,14 @@
       "output": 0.025
     },
     "deepseek-ai/deepseek-r1-distill-qwen-1.5b": {
-      "input": 0.09,
-      "output": 0.09
+      "input": 0.18,
+      "output": 0.18,
+      "maxInputTokens": 131072
     },
     "deepseek-ai/deepseek-r1-distill-qwen-14b": {
-      "input": 0.07,
-      "output": 0.07
+      "input": 1.6,
+      "output": 1.6,
+      "maxInputTokens": 131072
     },
     "deepseek-ai/deepseek-r1-distill-qwen-7b": {
       "input": 0.2,
@@ -1894,6 +1896,26 @@
       "input": 1.5,
       "output": 9,
       "maxInputTokens": 57920
+    },
+    "gpt-6-luna-2026-09-22": {
+      "input": 0.1,
+      "output": 0.5,
+      "cachedInput": 0.01,
+      "cacheCreationInput": 0.125,
+      "maxInputTokens": 922000
+    },
+    "gpt-6-sol-2026-09-22": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.2,
+      "cacheCreationInput": 2.5,
+      "maxInputTokens": 922000
+    },
+    "gemini-3.8-flash-cyber": {
+      "input": 1.5,
+      "output": 7.5,
+      "cachedInput": 0.15,
+      "maxInputTokens": 1048576
     }
   }
 }
