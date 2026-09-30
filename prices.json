@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-29",
+  "updated_at": "2026-09-30",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -317,7 +317,7 @@
       "input": 5,
       "output": 20,
       "cachedInput": 2.5,
-      "maxInputTokens": 128000
+      "maxInputTokens": 16000
     },
     "gpt-4o-transcribe": {
       "input": 2.5,
@@ -1216,7 +1216,7 @@
       "output": 15,
       "cachedInput": 0.3,
       "cacheCreationInput": 3.75,
-      "maxInputTokens": 1000000
+      "maxInputTokens": 128000
     },
     "claude-sonnet-4@20250514": {
       "input": 3,
@@ -1590,7 +1590,8 @@
     },
     "gemini-robotics-er-2-streaming-preview": {
       "input": 1,
-      "output": 5
+      "output": 5,
+      "maxInputTokens": 131072
     },
     "deepseek-v4-flash-0731": {
       "input": 0.4,
@@ -1816,7 +1817,7 @@
       "input": 5,
       "output": 30,
       "cachedInput": 0.5,
-      "maxInputTokens": 1050000
+      "maxInputTokens": 922000
     },
     "gpt-5.6-sol-2026-07-09": {
       "input": 4,
@@ -1940,6 +1941,33 @@
       "cachedInput": 0.2,
       "cacheCreationInput": 2.5,
       "maxInputTokens": 1000000
+    },
+    "gpt-6.1-sol": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.1,
+      "cacheCreationInput": 2.5,
+      "maxInputTokens": 922000
+    },
+    "gpt-6.1-sol-2026-09-29": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.1,
+      "cacheCreationInput": 2.5,
+      "maxInputTokens": 922000
+    },
+    "claude-haiku-4.5": {
+      "input": 1,
+      "output": 5,
+      "cachedInput": 0.1,
+      "cacheCreationInput": 1.25,
+      "maxInputTokens": 128000
+    },
+    "deepseek-ai/deepseek-v4.1-flash-fast": {
+      "input": 0.6,
+      "output": 2.4,
+      "cachedInput": 0.14,
+      "maxInputTokens": 1048576
     }
   }
 }
