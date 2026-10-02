@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-01",
+  "updated_at": "2026-10-02",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1757,9 +1757,9 @@
       "maxInputTokens": 1000000
     },
     "deepseek-v4p1-flash": {
-      "input": 0.22,
-      "output": 0.66,
-      "cachedInput": 0.007,
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.006,
       "maxInputTokens": 1048576
     },
     "chatgpt-image-latest": {
