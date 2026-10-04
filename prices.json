@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-03",
+  "updated_at": "2026-10-04",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1673,11 +1673,13 @@
     },
     "gemini-3.5-transcribe": {
       "input": 2,
-      "output": 12
+      "output": 12,
+      "maxInputTokens": 98304
     },
     "gemini-3.5-transcribe-live": {
       "input": 3.5,
-      "output": 21
+      "output": 21,
+      "maxInputTokens": 131072
     },
     "gemini-3.5-transcribe-preview": {
       "input": 2,
