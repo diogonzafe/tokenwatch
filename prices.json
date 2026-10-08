@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-07",
+  "updated_at": "2026-10-08",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1933,14 +1933,14 @@
     "claude-sonnet-5-5": {
       "input": 2,
       "output": 10,
-      "cachedInput": 0.2,
+      "cachedInput": 0.1,
       "cacheCreationInput": 2.5,
       "maxInputTokens": 1000000
     },
     "claude-sonnet-5-5@default": {
       "input": 2,
       "output": 10,
-      "cachedInput": 0.2,
+      "cachedInput": 0.1,
       "cacheCreationInput": 2.5,
       "maxInputTokens": 1000000
     },
@@ -1976,6 +1976,20 @@
       "output": 7.5,
       "cachedInput": 0.15,
       "maxInputTokens": 131072
+    },
+    "claude-haiku-5-5": {
+      "input": 0.1,
+      "output": 0.5,
+      "cachedInput": 0.01,
+      "cacheCreationInput": 0.125,
+      "maxInputTokens": 1000000
+    },
+    "claude-haiku-5-5@default": {
+      "input": 0.1,
+      "output": 0.5,
+      "cachedInput": 0.01,
+      "cacheCreationInput": 0.125,
+      "maxInputTokens": 1000000
     }
   }
 }
