@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-08",
+  "updated_at": "2026-10-09",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1968,7 +1968,7 @@
     "deepseek-ai/deepseek-v4.1-flash-fast": {
       "input": 0.6,
       "output": 2.4,
-      "cachedInput": 0.14,
+      "cachedInput": 0.014,
       "maxInputTokens": 1048576
     },
     "gemini-nano-banana-2.1": {
