@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-12",
+  "updated_at": "2026-10-13",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -184,8 +184,8 @@
       "maxInputTokens": 128000
     },
     "gpt-4-turbo-vision-preview": {
-      "input": 10,
-      "output": 30,
+      "input": 11,
+      "output": 33,
       "maxInputTokens": 128000
     },
     "gpt-4.1": {
@@ -2002,6 +2002,30 @@
       "input": 5,
       "output": 25,
       "cachedInput": 0.5
+    },
+    "deepseek-v4.1-flash-fast": {
+      "input": 0.01,
+      "output": 1.2,
+      "cacheCreationInput": 0.09,
+      "maxInputTokens": 1048576
+    },
+    "deepseek-v4.1-flash-fast-fp4": {
+      "input": 0.01,
+      "output": 1.2,
+      "cacheCreationInput": 0.09,
+      "maxInputTokens": 1048576
+    },
+    "computer-use-preview-2025-03-11": {
+      "input": 3,
+      "output": 12,
+      "maxInputTokens": 8192
+    },
+    "claude-fable-5-5": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 0.25,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 1000000
     }
   }
 }
