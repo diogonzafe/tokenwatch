@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-17",
+  "updated_at": "2026-10-18",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -508,7 +508,7 @@
       "input": 0.2,
       "output": 1.25,
       "cachedInput": 0.02,
-      "maxInputTokens": 400000
+      "maxInputTokens": 272000
     },
     "o1-2024-12-17": {
       "input": 15,
@@ -2083,6 +2083,32 @@
       "output": 10,
       "cachedInput": 0.1,
       "cacheCreationInput": 2.5,
+      "maxInputTokens": 200000
+    },
+    "claude-opus-4.8-fast": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "cacheCreationInput": 12.5,
+      "maxInputTokens": 200000
+    },
+    "deepseek-ai/deepseek-v4.1-flash-1017": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.007,
+      "maxInputTokens": 1048576
+    },
+    "deepseek-ai/deepseek-v4.1-flash-1017-fast": {
+      "input": 0.6,
+      "output": 2.4,
+      "cachedInput": 0.014,
+      "maxInputTokens": 1048576
+    },
+    "claude-sonnet-4.6": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.3,
+      "cacheCreationInput": 3.75,
       "maxInputTokens": 200000
     }
   }
