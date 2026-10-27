@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-26",
+  "updated_at": "2026-10-27",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -2004,9 +2004,9 @@
       "cachedInput": 0.5
     },
     "deepseek-v4.1-flash-fast": {
-      "input": 0.01,
-      "output": 1.2,
-      "cacheCreationInput": 0.09,
+      "input": 0.05,
+      "output": 0.15,
+      "cachedInput": 0.003,
       "maxInputTokens": 1048576
     },
     "deepseek-v4.1-flash-fast-fp4": {
@@ -2110,6 +2110,19 @@
       "cachedInput": 0.3,
       "cacheCreationInput": 3.75,
       "maxInputTokens": 200000
+    },
+    "gpt-6.1-terra": {
+      "input": 1,
+      "output": 5,
+      "cachedInput": 0.05,
+      "cacheCreationInput": 1.25,
+      "maxInputTokens": 922000
+    },
+    "deepseek-v4.1-flash-abliterated": {
+      "input": 0.22,
+      "output": 0.75,
+      "cachedInput": 0.045,
+      "maxInputTokens": 1048576
     }
   }
 }
