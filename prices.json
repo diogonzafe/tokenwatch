@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-03",
+  "updated_at": "2026-11-04",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -728,9 +728,9 @@
       "maxInputTokens": 32768
     },
     "deepseek-ai/deepseek-r1-distill-llama-70b": {
-      "input": 2,
-      "output": 2,
-      "maxInputTokens": 131072
+      "input": 0.25,
+      "output": 0.75,
+      "maxInputTokens": 128000
     },
     "deepseek-ai/deepseek-r1-distill-qwen-32b": {
       "input": 0.15,
@@ -1051,14 +1051,12 @@
       "output": 0.025
     },
     "deepseek-ai/deepseek-r1-distill-qwen-1.5b": {
-      "input": 0.18,
-      "output": 0.18,
-      "maxInputTokens": 131072
+      "input": 0.09,
+      "output": 0.09
     },
     "deepseek-ai/deepseek-r1-distill-qwen-14b": {
-      "input": 1.6,
-      "output": 1.6,
-      "maxInputTokens": 131072
+      "input": 0.07,
+      "output": 0.07
     },
     "deepseek-ai/deepseek-r1-distill-qwen-7b": {
       "input": 0.2,
@@ -1527,7 +1525,7 @@
     "gemini-omni-flash-preview": {
       "input": 1.5,
       "output": 9,
-      "maxInputTokens": 1048576
+      "maxInputTokens": 131072
     },
     "gemini-3.5-flash-lite": {
       "input": 0.405,
@@ -1585,10 +1583,10 @@
       "maxInputTokens": 131072
     },
     "deepseek-v4-flash-0731": {
-      "input": 0.4,
-      "output": 0.8,
-      "cachedInput": 0.08,
-      "maxInputTokens": 256000
+      "input": 0.44,
+      "output": 1.32,
+      "cachedInput": 0.014,
+      "maxInputTokens": 1048576
     },
     "gemini-3.7-flash": {
       "input": 2.026,
@@ -1883,7 +1881,7 @@
     "gemini-omni-1.1-flash-preview": {
       "input": 1.5,
       "output": 9,
-      "maxInputTokens": 57920
+      "maxInputTokens": 131072
     },
     "gpt-6-luna-2026-09-22": {
       "input": 0.1,
@@ -1912,9 +1910,10 @@
       "maxInputTokens": 1048576
     },
     "deepseek-v4.1-flash": {
-      "input": 0.27,
-      "output": 0.81,
-      "maxInputTokens": 1048576
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.006,
+      "maxInputTokens": 1048569
     },
     "claude-sonnet-5-5": {
       "input": 2,
@@ -1988,9 +1987,9 @@
       "cachedInput": 0.5
     },
     "deepseek-v4.1-flash-fast": {
-      "input": 0.05,
-      "output": 0.15,
-      "cachedInput": 0.003,
+      "input": 0.6,
+      "output": 2.4,
+      "cachedInput": 0.014,
       "maxInputTokens": 1048576
     },
     "deepseek-v4.1-flash-fast-fp4": {
@@ -2111,9 +2110,9 @@
       "maxInputTokens": 1048576
     },
     "deepseek-v4.1-flash-1017": {
-      "input": 0.3,
-      "output": 1.2,
-      "cachedInput": 0.006,
+      "input": 0.375,
+      "output": 1.5,
+      "cachedInput": 0.008,
       "maxInputTokens": 1048576
     },
     "deepseek-v4.1-flash-260910": {
@@ -2176,6 +2175,18 @@
       "output": 2.4,
       "cachedInput": 0.06,
       "maxInputTokens": 32000
+    },
+    "deepseek-v4-pro-fast": {
+      "input": 1.91,
+      "output": 3.83,
+      "cachedInput": 0.16,
+      "maxInputTokens": 1048576
+    },
+    "deepseek-v4.1-flash-f2": {
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.006,
+      "maxInputTokens": 1048576
     }
   }
 }
