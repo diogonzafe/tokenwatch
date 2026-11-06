@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-05",
+  "updated_at": "2026-11-06",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1759,10 +1759,10 @@
       "cachedInput": 1.25
     },
     "deepseek-ai/deepseek-v4.1-flash": {
-      "input": 0.3,
-      "output": 1.2,
-      "cachedInput": 0.007,
-      "maxInputTokens": 1048576
+      "input": 0.18,
+      "output": 0.72,
+      "cachedInput": 0.0036,
+      "maxInputTokens": 1048575
     },
     "gemini-2.5-flash-native-audio": {
       "input": 0.5,
@@ -2074,10 +2074,10 @@
       "maxInputTokens": 200000
     },
     "deepseek-ai/deepseek-v4.1-flash-1017": {
-      "input": 0.3,
-      "output": 1.2,
-      "cachedInput": 0.006,
-      "maxInputTokens": 1048576
+      "input": 0.18,
+      "output": 0.72,
+      "cachedInput": 0.0036,
+      "maxInputTokens": 1048575
     },
     "deepseek-ai/deepseek-v4.1-flash-1017-fast": {
       "input": 0.6,
@@ -2230,6 +2230,18 @@
       "output": 1.32,
       "cachedInput": 0.014,
       "maxInputTokens": 1048575
+    },
+    "gpt-6-cyber": {
+      "input": 20,
+      "output": 100,
+      "cachedInput": 2,
+      "cacheCreationInput": 25,
+      "maxInputTokens": 922000
+    },
+    "gemini-omni-1.2-flash": {
+      "input": 1.5,
+      "output": 9,
+      "maxInputTokens": 131072
     }
   }
 }
