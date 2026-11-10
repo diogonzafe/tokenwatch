@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-09",
+  "updated_at": "2026-11-10",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -2074,9 +2074,9 @@
       "maxInputTokens": 200000
     },
     "deepseek-ai/deepseek-v4.1-flash-1017": {
-      "input": 0.13,
-      "output": 0.65,
-      "cachedInput": 0.002,
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.006,
       "maxInputTokens": 1049000
     },
     "deepseek-ai/deepseek-v4.1-flash-1017-fast": {
@@ -2243,6 +2243,48 @@
       "input": 1.5,
       "output": 9,
       "maxInputTokens": 131072
+    },
+    "claude-fable-5-2": {
+      "input": 8,
+      "output": 40,
+      "cachedInput": 0.2,
+      "cacheCreationInput": 10,
+      "maxInputTokens": 1000000
+    },
+    "claude-fable-5-2@default": {
+      "input": 8,
+      "output": 40,
+      "cachedInput": 0.2,
+      "cacheCreationInput": 10,
+      "maxInputTokens": 1000000
+    },
+    "claude-mythos-5-2": {
+      "input": 8,
+      "output": 40,
+      "cachedInput": 0.2,
+      "cacheCreationInput": 10,
+      "maxInputTokens": 1000000
+    },
+    "claude-mythos-5-2-fast": {
+      "input": 16,
+      "output": 80,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 20,
+      "maxInputTokens": 1000000
+    },
+    "claude-fable-5-2-fast": {
+      "input": 16,
+      "output": 80,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 20,
+      "maxInputTokens": 1000000
+    },
+    "claude-fable-5.2": {
+      "input": 8,
+      "output": 40,
+      "cachedInput": 0.2,
+      "cacheCreationInput": 10,
+      "maxInputTokens": 200000
     }
   }
 }
