@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-12",
+  "updated_at": "2026-11-13",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -2303,6 +2303,12 @@
       "input": 4,
       "output": 20,
       "cachedInput": 0.2,
+      "maxInputTokens": 1048576
+    },
+    "gemini-4-hydrogen": {
+      "input": 1.5,
+      "output": 7.5,
+      "cachedInput": 0.075,
       "maxInputTokens": 1048576
     }
   }
