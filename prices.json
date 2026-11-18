@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-17",
+  "updated_at": "2026-11-18",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -99,6 +99,7 @@
       "input": 3,
       "output": 15,
       "cachedInput": 0.3,
+      "cacheCreationInput": 3.75,
       "maxInputTokens": 200000
     },
     "gpt-oss-120b": {
@@ -1396,6 +1397,7 @@
       "input": 3,
       "output": 15,
       "cachedInput": 0.3,
+      "cacheCreationInput": 3.75,
       "maxInputTokens": 200000
     },
     "claude-4-opus": {
@@ -2310,6 +2312,27 @@
       "output": 7.5,
       "cachedInput": 0.075,
       "maxInputTokens": 200000
+    },
+    "gpt-6.2-astra": {
+      "input": 8,
+      "output": 40,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 10,
+      "maxInputTokens": 922000
+    },
+    "gpt-6.2-sol": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.1,
+      "cacheCreationInput": 2.5,
+      "maxInputTokens": 922000
+    },
+    "gpt-6.2-astra-law": {
+      "input": 8,
+      "output": 40,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 10,
+      "maxInputTokens": 922000
     }
   }
 }
