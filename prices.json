@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18",
+  "updated_at": "2026-11-19",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -2156,9 +2156,9 @@
       "maxInputTokens": 1050000
     },
     "gpt-6-rosalind": {
-      "input": 15,
-      "output": 75,
-      "cachedInput": 1.5,
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
       "cacheCreationInput": 18.75,
       "maxInputTokens": 922000
     },
@@ -2333,6 +2333,12 @@
       "cachedInput": 0.4,
       "cacheCreationInput": 10,
       "maxInputTokens": 922000
+    },
+    "gemini-4-neon": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.15,
+      "maxInputTokens": 200000
     }
   }
 }
