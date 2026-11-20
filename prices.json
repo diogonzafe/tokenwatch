@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-19",
+  "updated_at": "2026-11-20",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -2159,7 +2159,7 @@
       "input": 10,
       "output": 50,
       "cachedInput": 1,
-      "cacheCreationInput": 18.75,
+      "cacheCreationInput": 12.5,
       "maxInputTokens": 922000
     },
     "gpt-6-astra-law": {
