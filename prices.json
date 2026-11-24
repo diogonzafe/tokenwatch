@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-23",
+  "updated_at": "2026-11-24",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -2084,7 +2084,7 @@
     "deepseek-ai/deepseek-v4.1-flash-1017-fast": {
       "input": 0.6,
       "output": 2.4,
-      "cachedInput": 0.014,
+      "cachedInput": 0.012,
       "maxInputTokens": 1048576
     },
     "claude-sonnet-4.6": {
@@ -2339,6 +2339,12 @@
       "output": 15,
       "cachedInput": 0.15,
       "maxInputTokens": 200000
+    },
+    "gemini-4-neon-cyber-permissive": {
+      "input": 3,
+      "output": 15,
+      "cachedInput": 0.15,
+      "maxInputTokens": 1048576
     }
   }
 }
