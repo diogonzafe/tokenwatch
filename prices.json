@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-24",
+  "updated_at": "2026-11-25",
   "source": "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
   "models": {
     "gpt-4o": {
@@ -1630,7 +1630,7 @@
       "input": 5,
       "output": 30,
       "cachedInput": 0.5,
-      "maxInputTokens": 400000
+      "maxInputTokens": 272000
     },
     "gemini-3.5-live-translate-preview": {
       "input": 3.5,
@@ -1916,8 +1916,8 @@
     "deepseek-v4.1-flash": {
       "input": 0.3,
       "output": 1.2,
-      "cachedInput": 0.006,
-      "maxInputTokens": 1048569
+      "cachedInput": 0.03,
+      "maxInputTokens": 1000000
     },
     "claude-sonnet-5-5": {
       "input": 2,
@@ -2114,10 +2114,10 @@
       "maxInputTokens": 1000000
     },
     "deepseek-v4.1-flash-1017": {
-      "input": 0.375,
-      "output": 1.5,
-      "cachedInput": 0.008,
-      "maxInputTokens": 1048576
+      "input": 0.3,
+      "output": 1.2,
+      "cachedInput": 0.006,
+      "maxInputTokens": 1000000
     },
     "deepseek-v4.1-flash-260910": {
       "input": 0.3,
@@ -2345,6 +2345,32 @@
       "output": 15,
       "cachedInput": 0.15,
       "maxInputTokens": 1048576
+    },
+    "gpt-6.2-astra-healthcare": {
+      "input": 8,
+      "output": 40,
+      "cachedInput": 0.4,
+      "cacheCreationInput": 10,
+      "maxInputTokens": 922000
+    },
+    "gpt-6.2-sol-healthcare": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.1,
+      "cacheCreationInput": 2.5,
+      "maxInputTokens": 922000
+    },
+    "gpt-6-astra-healthcare": {
+      "input": 10,
+      "output": 50,
+      "cachedInput": 1,
+      "maxInputTokens": 922000
+    },
+    "gpt-6.1-sol-healthcare": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.1,
+      "maxInputTokens": 922000
     }
   }
 }
